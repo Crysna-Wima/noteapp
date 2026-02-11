@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catatan Crysna — Simpan Catatanmu di Awan</title>
+  <title>Catatan Crysna</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +12,7 @@
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { hand: ['Caveat','cursive'], body: ['DM Sans','sans-serif'] },
+          fontFamily: { hand:['Caveat','cursive'], body:['DM Sans','sans-serif'] },
           colors: { cork:'#c4a882','cork-dark':'#a68b6b', cream:'#fdf6ec', ink:'#2c1810' }
         }
       }
@@ -22,7 +22,6 @@
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'DM Sans',sans-serif;overflow:hidden;height:100vh}
 
-    /* Cork canvas background */
     .cork-bg{
       background-color:#c4a882;
       background-image:
@@ -30,7 +29,6 @@
         radial-gradient(ellipse at 80% 20%,rgba(255,255,255,.08) 0%,transparent 40%),
         url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
     }
-
     .login-bg{background:linear-gradient(135deg,#fdf6ec 0%,#f0e6d3 50%,#e8d5b8 100%);min-height:100vh}
 
     ::-webkit-scrollbar{width:6px;height:6px}
@@ -38,125 +36,94 @@
     ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px}
 
     /* Sidebar */
-    .sidebar{
-      width:280px;background:rgba(253,246,236,.97);backdrop-filter:blur(12px);
-      border-right:1px solid rgba(196,168,130,.25);
-      transition:width .3s cubic-bezier(.4,0,.2,1),min-width .3s;
-      overflow:hidden;
-    }
+    .sidebar{width:280px;background:rgba(253,246,236,.97);backdrop-filter:blur(12px);border-right:1px solid rgba(196,168,130,.25);transition:width .3s cubic-bezier(.4,0,.2,1),min-width .3s;overflow:hidden}
     .sidebar.collapsed{width:0;min-width:0;border-right:none}
     .sidebar-item{cursor:pointer;transition:background .15s;border-left:3px solid transparent}
     .sidebar-item:hover{background:rgba(196,168,130,.15)}
     .sidebar-item.active{background:rgba(196,168,130,.22);border-left-color:#a68b6b}
     .sidebar-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
-    /* Toolbar */
+    /* Bars */
     .top-bar{backdrop-filter:blur(16px);background:rgba(253,246,236,.92);border-bottom:1px solid rgba(196,168,130,.3)}
-    .fmt-bar{backdrop-filter:blur(12px);background:rgba(253,246,236,.88);border-bottom:1px solid rgba(196,168,130,.2)}
-    .fmt-btn{
-      width:32px;height:32px;display:flex;align-items:center;justify-content:center;
-      border-radius:6px;cursor:pointer;border:none;background:transparent;
-      color:rgba(44,24,16,.55);font-size:13px;transition:all .15s;
-    }
+    .fmt-bar{backdrop-filter:blur(12px);background:rgba(253,246,236,.95);border-bottom:1px solid rgba(196,168,130,.2);position:relative;z-index:60}
+    .fmt-btn{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;border:none;background:transparent;color:rgba(44,24,16,.55);font-size:13px;transition:all .15s;position:relative}
     .fmt-btn:hover{background:rgba(196,168,130,.25);color:#2c1810}
     .fmt-btn.active{background:rgba(196,168,130,.35);color:#2c1810;font-weight:700}
-    .fmt-sep{width:1px;height:20px;background:rgba(196,168,130,.25);margin:0 4px}
+    .fmt-sep{width:1px;height:20px;background:rgba(196,168,130,.25);margin:0 2px;display:inline-block;vertical-align:middle}
 
-    /* Text block on canvas */
-    .text-block{
+    /* Text element on canvas */
+    .txt-el{
       position:absolute;
-      min-width:120px;min-height:40px;
-      padding:10px 14px;
-      border:2px dashed transparent;
-      border-radius:6px;
-      cursor:grab;
-      transition:border-color .2s,box-shadow .2s;
-      background:rgba(255,255,255,.45);
-      backdrop-filter:blur(4px);
+      min-width:2px;
+      padding:4px 6px;
+      border:2px solid transparent;
+      border-radius:4px;
+      cursor:default;
+      transition:border-color .15s;
+      background:transparent;
     }
-    .text-block:hover,.text-block.selected{
-      border-color:rgba(196,168,130,.5);
-      box-shadow:0 2px 12px rgba(0,0,0,.08);
-    }
-    .text-block.selected{border-color:#a68b6b;box-shadow:0 2px 16px rgba(0,0,0,.12)}
-    .text-block.dragging{cursor:grabbing;opacity:.85;box-shadow:0 4px 20px rgba(0,0,0,.15)}
-    .text-block-content{
-      outline:none;min-height:24px;line-height:1.6;
+    .txt-el:hover{border-color:rgba(166,139,107,.3)}
+    .txt-el.selected{border-color:#a68b6b;box-shadow:0 0 0 1px rgba(166,139,107,.2)}
+    .txt-el.editing{border-color:#8b7355;background:rgba(255,255,255,.2)}
+    .txt-el.dragging{opacity:.8;cursor:grabbing}
+    .txt-el .txt-content{
+      outline:none;min-height:20px;line-height:1.6;
       font-family:'DM Sans',sans-serif;font-size:16px;color:#2c1810;
-      word-break:break-word;
-    }
-    .text-block-content:empty::before{
-      content:'Ketik di sini...';color:rgba(44,24,16,.25);pointer-events:none;
+      word-break:break-word;white-space:pre-wrap;
     }
 
-    /* Delete handle on block */
-    .block-delete{
-      position:absolute;top:-10px;right:-10px;
-      width:22px;height:22px;border-radius:50%;
-      background:#e74c3c;color:white;border:2px solid white;
-      font-size:11px;cursor:pointer;display:none;
-      align-items:center;justify-content:center;z-index:5;
+    /* Selection handles */
+    .sel-handle{
+      position:absolute;width:8px;height:8px;background:white;
+      border:2px solid #a68b6b;border-radius:2px;display:none;z-index:5;
     }
-    .text-block.selected .block-delete{display:flex}
+    .txt-el.selected .sel-handle{display:block}
+    .sel-handle.tl{top:-5px;left:-5px;cursor:nwse-resize}
+    .sel-handle.tr{top:-5px;right:-5px;cursor:nesw-resize}
+    .sel-handle.bl{bottom:-5px;left:-5px;cursor:nesw-resize}
+    .sel-handle.br{bottom:-5px;right:-5px;cursor:nwse-resize}
 
-    /* Drag handle */
-    .block-drag{
-      position:absolute;top:-10px;left:-10px;
-      width:22px;height:22px;border-radius:50%;
-      background:#a68b6b;color:white;border:2px solid white;
-      font-size:10px;cursor:grab;display:none;
-      align-items:center;justify-content:center;z-index:5;
-    }
-    .text-block.selected .block-drag{display:flex}
+    /* Canvas */
+    #noteCanvas{position:relative;width:4000px;height:4000px;cursor:text}
 
-    /* Canvas area */
-    #noteCanvas{position:relative;width:3000px;height:3000px}
-
-    /* Color picker dropdown */
+    /* Color pickers - FIXED z-index */
     .color-picker-dropdown{
-      position:absolute;top:100%;left:50%;transform:translateX(-50%);
+      position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);
       background:white;border-radius:10px;padding:8px;
-      box-shadow:0 4px 20px rgba(0,0,0,.15);display:none;z-index:100;
-      gap:4px;flex-wrap:wrap;width:140px;
+      box-shadow:0 8px 30px rgba(0,0,0,.2);display:none;z-index:200;
+      gap:5px;flex-wrap:wrap;width:148px;
     }
     .color-picker-dropdown.show{display:flex}
-    .cp-swatch{
-      width:24px;height:24px;border-radius:50%;cursor:pointer;
-      border:2px solid transparent;transition:transform .1s,border-color .15s;
-    }
+    .cp-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .1s,border-color .15s}
     .cp-swatch:hover{transform:scale(1.2);border-color:#2c1810}
 
     /* Note color dots */
-    .note-color-dot{
-      width:22px;height:22px;border-radius:50%;cursor:pointer;
-      border:2px solid transparent;transition:transform .15s,border-color .15s;
-    }
+    .note-color-dot{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s}
     .note-color-dot:hover{transform:scale(1.15)}
     .note-color-dot.active{border-color:#2c1810;transform:scale(1.1)}
+    .nc-yellow{background:#fff9c4}.nc-pink{background:#f8bbd0}.nc-blue{background:#b3e5fc}
+    .nc-green{background:#c8e6c9}.nc-orange{background:#ffe0b2}.nc-purple{background:#e1bee7}
 
-    .nc-yellow{background:#fff9c4} .nc-pink{background:#f8bbd0} .nc-blue{background:#b3e5fc}
-    .nc-green{background:#c8e6c9} .nc-orange{background:#ffe0b2} .nc-purple{background:#e1bee7}
+    /* Canvas color tint overlay */
+    .canvas-tint{position:absolute;inset:0;pointer-events:none;z-index:0}
 
-    /* Animations */
-    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-    .fade-in{animation:fadeIn .5s ease-out}
-    @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
-    .slide-in{animation:slideIn .2s ease-out}
-    @keyframes blockAppear{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
-    .block-appear{animation:blockAppear .25s cubic-bezier(.34,1.56,.64,1)}
+    /* Mode indicator */
+    .mode-pill{
+      position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:rgba(44,24,16,.8);color:#fdf6ec;font-size:11px;
+      padding:6px 16px;border-radius:20px;z-index:100;
+      transition:opacity .3s;pointer-events:none;
+      font-family:'DM Sans',sans-serif;
+    }
 
-    /* Mobile sidebar overlay */
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out}
+    @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}.slide-in{animation:slideIn .2s ease-out}
+
     .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:35}
     .sidebar-overlay.show{display:block}
     @media(max-width:640px){
       .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:45;width:270px;box-shadow:4px 0 24px rgba(0,0,0,.15)}
       .sidebar.collapsed{width:0}
-    }
-
-    /* Empty note state */
-    .empty-canvas{
-      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-      text-align:center;pointer-events:none;
     }
   </style>
 </head>
@@ -167,22 +134,14 @@
     <div class="text-center fade-in max-w-md w-full">
       <div class="mb-8">
         <span class="font-hand text-7xl text-ink block mb-2">📌 Catatan Crysna</span>
-        <p class="text-ink/60 font-body text-lg leading-relaxed">
-          Simpan catatan di awan. Tulis, seret, atur sesuka hati.<br>
-          Catatanmu aman &mdash; bisa diakses dari mana saja.
-        </p>
+        <p class="text-ink/60 font-body text-lg leading-relaxed">Simpan catatan di awan. Tulis, seret, atur sesuka hati.<br>Catatanmu aman &mdash; bisa diakses dari mana saja.</p>
       </div>
-      <button onclick="loginWithGoogle()"
-        class="inline-flex items-center gap-3 px-8 py-4 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-cork/20 group">
+      <button onclick="loginWithGoogle()" class="inline-flex items-center gap-3 px-8 py-4 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-cork/20 group">
         <svg class="w-6 h-6" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
         <span class="font-body font-medium text-ink">Masuk dengan Google</span>
       </button>
-      <div class="mt-6 flex items-center gap-4 max-w-xs mx-auto">
-        <div class="h-px bg-ink/10 flex-1"></div><span class="text-ink/30 text-xs">atau</span><div class="h-px bg-ink/10 flex-1"></div>
-      </div>
-      <button onclick="toggleEmailForm()" class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-ink/5 rounded-xl hover:bg-ink/10 transition-colors border border-ink/10">
-        <span>✉️</span><span class="font-body text-sm text-ink/70">Masuk dengan Email</span>
-      </button>
+      <div class="mt-6 flex items-center gap-4 max-w-xs mx-auto"><div class="h-px bg-ink/10 flex-1"></div><span class="text-ink/30 text-xs">atau</span><div class="h-px bg-ink/10 flex-1"></div></div>
+      <button onclick="toggleEmailForm()" class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-ink/5 rounded-xl hover:bg-ink/10 transition-colors border border-ink/10"><span>✉️</span><span class="font-body text-sm text-ink/70">Masuk dengan Email</span></button>
       <div id="emailForm" class="hidden mt-6 max-w-sm mx-auto text-left fade-in">
         <input id="emailInput" type="email" placeholder="email@contoh.com" class="w-full px-4 py-3 rounded-xl border border-cork/30 bg-white text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-cork mb-3"/>
         <input id="passwordInput" type="password" placeholder="Password (min 6 karakter)" class="w-full px-4 py-3 rounded-xl border border-cork/30 bg-white text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-cork mb-3"/>
@@ -195,7 +154,7 @@
     </div>
   </div>
 
-  <!-- MAIN APP -->
+  <!-- APP -->
   <div id="appPage" class="hidden h-screen flex flex-col">
     <!-- Top bar -->
     <header class="top-bar px-4 py-2.5 flex items-center justify-between z-50 shrink-0">
@@ -211,7 +170,6 @@
     </header>
 
     <div class="flex flex-1 overflow-hidden relative">
-      <!-- Mobile overlay -->
       <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
       <!-- Sidebar -->
@@ -225,21 +183,17 @@
         </div>
         <div id="sidebarList" class="flex-1 overflow-y-auto px-1 pb-2"></div>
         <div class="px-3 py-3 border-t border-cork/15 shrink-0">
-          <button onclick="addNote()" class="w-full flex items-center justify-center gap-2 py-2.5 bg-ink text-cream rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors">
-            <span class="text-base leading-none">+</span> Catatan Baru
-          </button>
+          <button onclick="addNote()" class="w-full flex items-center justify-center gap-2 py-2.5 bg-ink text-cream rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors"><span class="text-base leading-none">+</span> Catatan Baru</button>
         </div>
       </aside>
 
-      <!-- Main content area -->
+      <!-- Main -->
       <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Note header + format toolbar (only when a note is selected) -->
-        <div id="noteToolbar" class="hidden shrink-0">
-          <!-- Note info bar -->
+        <!-- Note header + format bar -->
+        <div id="noteToolbar" class="hidden shrink-0" style="z-index:60">
           <div class="fmt-bar px-4 py-2 flex items-center gap-3 flex-wrap">
-            <input id="noteTitleInput" type="text" placeholder="Judul catatan..." class="font-hand text-xl font-bold bg-transparent border-none outline-none text-ink flex-1 min-w-[150px]"/>
+            <input id="noteTitleInput" type="text" placeholder="Judul catatan..." class="font-hand text-xl font-bold bg-transparent border-none outline-none text-ink flex-1 min-w-[120px]"/>
             <span id="noteDate" class="text-[11px] text-ink/30 font-body shrink-0"></span>
-            <!-- Note color -->
             <div class="flex items-center gap-1 shrink-0">
               <div class="note-color-dot nc-yellow active" data-color="note-yellow" onclick="changeNoteColor(this)"></div>
               <div class="note-color-dot nc-pink" data-color="note-pink" onclick="changeNoteColor(this)"></div>
@@ -248,105 +202,81 @@
               <div class="note-color-dot nc-orange" data-color="note-orange" onclick="changeNoteColor(this)"></div>
               <div class="note-color-dot nc-purple" data-color="note-purple" onclick="changeNoteColor(this)"></div>
             </div>
-            <button onclick="deleteCurrentNote()" class="text-ink/30 hover:text-red-500 transition-colors shrink-0" title="Hapus Catatan">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            </button>
+            <button onclick="deleteCurrentNote()" class="text-ink/30 hover:text-red-500 transition-colors shrink-0" title="Hapus"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
           </div>
           <!-- Format toolbar -->
-          <div class="fmt-bar px-4 py-1.5 flex items-center gap-1 flex-wrap">
-            <button class="fmt-btn" onclick="addTextBlock()" title="Tambah Teks">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            </button>
+          <div class="fmt-bar px-4 py-1.5 flex items-center gap-1 flex-wrap" style="z-index:70">
+            <button class="fmt-btn" onclick="execFmt('bold')" title="Bold" id="btnBold"><b>B</b></button>
+            <button class="fmt-btn" onclick="execFmt('italic')" title="Italic" id="btnItalic"><i>I</i></button>
+            <button class="fmt-btn" onclick="execFmt('underline')" title="Underline" id="btnUnderline"><u>U</u></button>
+            <button class="fmt-btn" onclick="execFmt('strikeThrough')" title="Coret" id="btnStrike"><s>S</s></button>
             <div class="fmt-sep"></div>
-            <button class="fmt-btn" onclick="execFmt('bold')" title="Bold (Ctrl+B)" id="btnBold"><b>B</b></button>
-            <button class="fmt-btn" onclick="execFmt('italic')" title="Italic (Ctrl+I)" id="btnItalic"><i>I</i></button>
-            <button class="fmt-btn" onclick="execFmt('underline')" title="Underline (Ctrl+U)" id="btnUnderline"><u>U</u></button>
-            <button class="fmt-btn" onclick="execFmt('strikeThrough')" title="Strikethrough" id="btnStrike"><s>S</s></button>
-            <div class="fmt-sep"></div>
-            <!-- Font size -->
-            <select id="fontSizeSelect" onchange="changeFontSize(this.value)" class="fmt-btn text-xs bg-transparent border border-cork/20 rounded-md px-1 w-auto cursor-pointer" style="width:60px" title="Ukuran Font">
-              <option value="1">10</option>
-              <option value="2">13</option>
-              <option value="3" selected>16</option>
-              <option value="4">18</option>
-              <option value="5">24</option>
-              <option value="6">32</option>
-              <option value="7">48</option>
+            <select id="fontSizeSelect" onchange="changeFontSize(this.value)" class="fmt-btn text-xs bg-transparent border border-cork/20 rounded-md px-1 cursor-pointer" style="width:58px" title="Ukuran">
+              <option value="1">10</option><option value="2">13</option><option value="3" selected>16</option>
+              <option value="4">18</option><option value="5">24</option><option value="6">32</option><option value="7">48</option>
             </select>
             <div class="fmt-sep"></div>
             <!-- Text color -->
-            <div class="relative">
-              <button class="fmt-btn" onclick="toggleColorPicker('textColorPicker')" title="Warna Teks" id="btnTextColor">
+            <div style="position:relative;display:inline-block">
+              <button class="fmt-btn" onclick="togglePicker('textCP')" title="Warna Teks" id="btnTC">
                 <span style="font-weight:700">A</span>
-                <span id="textColorIndicator" style="position:absolute;bottom:3px;left:8px;right:8px;height:3px;background:#2c1810;border-radius:2px"></span>
+                <span id="tcBar" style="position:absolute;bottom:3px;left:8px;right:8px;height:3px;background:#2c1810;border-radius:2px"></span>
               </button>
-              <div id="textColorPicker" class="color-picker-dropdown">
-                <div class="cp-swatch" style="background:#2c1810" onclick="applyTextColor('#2c1810')"></div>
-                <div class="cp-swatch" style="background:#e74c3c" onclick="applyTextColor('#e74c3c')"></div>
-                <div class="cp-swatch" style="background:#e67e22" onclick="applyTextColor('#e67e22')"></div>
-                <div class="cp-swatch" style="background:#f1c40f" onclick="applyTextColor('#f1c40f')"></div>
-                <div class="cp-swatch" style="background:#27ae60" onclick="applyTextColor('#27ae60')"></div>
-                <div class="cp-swatch" style="background:#3498db" onclick="applyTextColor('#3498db')"></div>
-                <div class="cp-swatch" style="background:#8e44ad" onclick="applyTextColor('#8e44ad')"></div>
-                <div class="cp-swatch" style="background:#e91e8f" onclick="applyTextColor('#e91e8f')"></div>
-                <div class="cp-swatch" style="background:#1abc9c" onclick="applyTextColor('#1abc9c')"></div>
-                <div class="cp-swatch" style="background:#95a5a6" onclick="applyTextColor('#95a5a6')"></div>
+              <div id="textCP" class="color-picker-dropdown">
+                <div class="cp-swatch" style="background:#2c1810" onclick="setTC('#2c1810')"></div>
+                <div class="cp-swatch" style="background:#e74c3c" onclick="setTC('#e74c3c')"></div>
+                <div class="cp-swatch" style="background:#e67e22" onclick="setTC('#e67e22')"></div>
+                <div class="cp-swatch" style="background:#f1c40f" onclick="setTC('#f1c40f')"></div>
+                <div class="cp-swatch" style="background:#27ae60" onclick="setTC('#27ae60')"></div>
+                <div class="cp-swatch" style="background:#3498db" onclick="setTC('#3498db')"></div>
+                <div class="cp-swatch" style="background:#8e44ad" onclick="setTC('#8e44ad')"></div>
+                <div class="cp-swatch" style="background:#e91e8f" onclick="setTC('#e91e8f')"></div>
+                <div class="cp-swatch" style="background:#ffffff;border:1px solid #ccc" onclick="setTC('#ffffff')"></div>
+                <div class="cp-swatch" style="background:#95a5a6" onclick="setTC('#95a5a6')"></div>
               </div>
             </div>
-            <!-- Highlight color -->
-            <div class="relative">
-              <button class="fmt-btn" onclick="toggleColorPicker('hilightPicker')" title="Warna Highlight">
+            <!-- Highlight -->
+            <div style="position:relative;display:inline-block">
+              <button class="fmt-btn" onclick="togglePicker('hlCP')" title="Highlight">
                 <span style="background:#fff176;padding:0 3px;border-radius:2px;font-weight:700;font-size:12px">H</span>
               </button>
-              <div id="hilightPicker" class="color-picker-dropdown">
-                <div class="cp-swatch" style="background:transparent;border:1px dashed #ccc" onclick="applyHighlight('transparent')"></div>
-                <div class="cp-swatch" style="background:#fff176" onclick="applyHighlight('#fff176')"></div>
-                <div class="cp-swatch" style="background:#aed581" onclick="applyHighlight('#aed581')"></div>
-                <div class="cp-swatch" style="background:#4fc3f7" onclick="applyHighlight('#4fc3f7')"></div>
-                <div class="cp-swatch" style="background:#f48fb1" onclick="applyHighlight('#f48fb1')"></div>
-                <div class="cp-swatch" style="background:#ffab91" onclick="applyHighlight('#ffab91')"></div>
-                <div class="cp-swatch" style="background:#ce93d8" onclick="applyHighlight('#ce93d8')"></div>
+              <div id="hlCP" class="color-picker-dropdown">
+                <div class="cp-swatch" style="background:transparent;border:1px dashed #ccc" onclick="setHL(false)"></div>
+                <div class="cp-swatch" style="background:#fff176" onclick="setHL('#fff176')"></div>
+                <div class="cp-swatch" style="background:#aed581" onclick="setHL('#aed581')"></div>
+                <div class="cp-swatch" style="background:#4fc3f7" onclick="setHL('#4fc3f7')"></div>
+                <div class="cp-swatch" style="background:#f48fb1" onclick="setHL('#f48fb1')"></div>
+                <div class="cp-swatch" style="background:#ffab91" onclick="setHL('#ffab91')"></div>
+                <div class="cp-swatch" style="background:#ce93d8" onclick="setHL('#ce93d8')"></div>
               </div>
             </div>
             <div class="fmt-sep"></div>
-            <button class="fmt-btn" onclick="execFmt('justifyLeft')" title="Rata Kiri">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M3 12h12M3 18h16"/></svg>
-            </button>
-            <button class="fmt-btn" onclick="execFmt('justifyCenter')" title="Rata Tengah">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M6 12h12M4 18h16"/></svg>
-            </button>
-            <button class="fmt-btn" onclick="execFmt('justifyRight')" title="Rata Kanan">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M9 12h12M5 18h16"/></svg>
-            </button>
+            <button class="fmt-btn" onclick="execFmt('justifyLeft')" title="Rata Kiri"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M3 12h12M3 18h16"/></svg></button>
+            <button class="fmt-btn" onclick="execFmt('justifyCenter')" title="Rata Tengah"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M6 12h12M4 18h16"/></svg></button>
+            <button class="fmt-btn" onclick="execFmt('justifyRight')" title="Rata Kanan"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M9 12h12M5 18h16"/></svg></button>
+            <div class="fmt-sep"></div>
+            <span class="text-[10px] text-ink/30 font-body ml-1" id="modeTip">Klik di canvas untuk menulis</span>
           </div>
         </div>
 
-        <!-- Canvas / welcome -->
-        <div id="canvasWrapper" class="flex-1 overflow-auto cork-bg relative">
-          <div id="noteCanvas"></div>
-          <!-- Welcome state (no note selected) -->
+        <!-- Canvas -->
+        <div id="canvasWrapper" class="flex-1 overflow-auto cork-bg relative" style="z-index:1">
+          <div id="noteCanvas" onmousedown="onCanvasClick(event)"></div>
           <div id="welcomeState" class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div class="text-center">
-              <span class="text-6xl block mb-4">📝</span>
-              <p class="font-hand text-3xl text-ink/30">Pilih atau buat catatan</p>
-              <p class="font-body text-sm text-ink/20 mt-2">Pilih catatan dari sidebar atau klik "Catatan Baru"</p>
-            </div>
+            <div class="text-center"><span class="text-6xl block mb-4">📝</span><p class="font-hand text-3xl text-ink/30">Pilih atau buat catatan</p><p class="font-body text-sm text-ink/20 mt-2">Pilih catatan dari sidebar atau klik "Catatan Baru"</p></div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Mobile FAB -->
-    <button onclick="addTextBlock()" id="fabAdd" class="hidden sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-ink text-cream rounded-full shadow-xl flex items-center justify-center text-2xl z-30 active:scale-95 transition-transform">+</button>
   </div>
 
   <!-- LOADING -->
   <div id="loadingPage" class="fixed inset-0 bg-cream flex items-center justify-center z-[9998]">
-    <div class="text-center fade-in">
-      <span class="font-hand text-5xl text-ink block mb-4">📌</span>
-      <p class="font-body text-ink/40 text-sm">Memuat...</p>
-    </div>
+    <div class="text-center fade-in"><span class="font-hand text-5xl text-ink block mb-4">📌</span><p class="font-body text-ink/40 text-sm">Memuat...</p></div>
   </div>
+
+  <!-- Mode pill -->
+  <div id="modePill" class="mode-pill" style="opacity:0"></div>
 
   <script>
     // ===== CONFIG =====
@@ -355,192 +285,93 @@
     const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
     // ===== STATE =====
-    let currentUser=null;
-    let notes=[];
-    let activeNoteId=null;
-    let selectedBlockId=null;
-    let dragState=null;
-    let sidebarOpen=window.innerWidth>640;
+    let currentUser=null, notes=[], activeNoteId=null, selectedElId=null, editingElId=null;
+    let dragState=null, sidebarOpen=innerWidth>640;
 
-    // Color map for canvas bg tint
-    const canvasBg={
-      'note-yellow':'rgba(255,249,196,.18)','note-pink':'rgba(248,187,208,.18)',
-      'note-blue':'rgba(179,229,252,.18)','note-green':'rgba(200,230,201,.18)',
-      'note-orange':'rgba(255,224,178,.18)','note-purple':'rgba(225,190,231,.18)'
-    };
+    const tintMap={'note-yellow':'rgba(255,249,196,.15)','note-pink':'rgba(248,187,208,.15)','note-blue':'rgba(179,229,252,.15)','note-green':'rgba(200,230,201,.15)','note-orange':'rgba(255,224,178,.15)','note-purple':'rgba(225,190,231,.15)'};
+    const colorMap={'note-yellow':'#fff9c4','note-pink':'#f8bbd0','note-blue':'#b3e5fc','note-green':'#c8e6c9','note-orange':'#ffe0b2','note-purple':'#e1bee7'};
 
-    // ===== HELPERS =====
     function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-    function uid(){return 'b'+Date.now().toString(36)+Math.random().toString(36).substr(2,5)}
-
-    function formatDate(d){
-      if(!d)return'';const o=new Date(d);
-      const M=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-      return`${o.getDate()} ${M[o.getMonth()]} ${o.getFullYear()}, ${String(o.getHours()).padStart(2,'0')}:${String(o.getMinutes()).padStart(2,'0')}`;
-    }
-    function relDate(d){
-      if(!d)return'';const diff=Date.now()-new Date(d);const m=Math.floor(diff/6e4),h=Math.floor(diff/36e5),dy=Math.floor(diff/864e5);
-      if(m<1)return'Baru saja';if(m<60)return m+' menit lalu';if(h<24)return h+' jam lalu';if(dy<7)return dy+' hari lalu';return formatDate(d);
-    }
+    function uid(){return'b'+Date.now().toString(36)+Math.random().toString(36).substr(2,5)}
+    function formatDate(d){if(!d)return'';const o=new Date(d),M=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];return`${o.getDate()} ${M[o.getMonth()]} ${o.getFullYear()}, ${String(o.getHours()).padStart(2,'0')}:${String(o.getMinutes()).padStart(2,'0')}`}
+    function relDate(d){if(!d)return'';const diff=Date.now()-new Date(d),m=Math.floor(diff/6e4),h=Math.floor(diff/36e5),dy=Math.floor(diff/864e5);if(m<1)return'Baru saja';if(m<60)return m+' mnt lalu';if(h<24)return h+' jam lalu';if(dy<7)return dy+' hari lalu';return formatDate(d)}
+    function showPill(t){const p=document.getElementById('modePill');p.textContent=t;p.style.opacity='1';clearTimeout(p._t);p._t=setTimeout(()=>p.style.opacity='0',1500)}
 
     // ===== PAGES =====
-    function showPage(p){
-      ['loginPage','appPage','loadingPage'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-      document.getElementById(p+'Page')?.classList.remove('hidden');
-      if(p==='app'){
-        const s=document.getElementById('sidebar');
-        sidebarOpen?s.classList.remove('collapsed'):s.classList.add('collapsed');
-      }
-    }
+    function showPage(p){['loginPage','appPage','loadingPage'].forEach(id=>document.getElementById(id).classList.add('hidden'));document.getElementById(p+'Page')?.classList.remove('hidden');if(p==='app'){const s=document.getElementById('sidebar');sidebarOpen?s.classList.remove('collapsed'):s.classList.add('collapsed')}}
 
     // ===== AUTH =====
-    async function loginWithGoogle(){
-      const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
-      if(error)showAuthError(error.message);
-    }
+    async function loginWithGoogle(){const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});if(error)showAuthError(error.message)}
     function toggleEmailForm(){document.getElementById('emailForm').classList.toggle('hidden')}
-    async function signUpEmail(){
-      const e=document.getElementById('emailInput').value.trim(),p=document.getElementById('passwordInput').value;
-      if(!e||!p)return showAuthError('Isi email dan password!');
-      if(p.length<6)return showAuthError('Password minimal 6 karakter!');
-      const{error}=await sb.auth.signUp({email:e,password:p});
-      if(error)return showAuthError(error.message);showAuthError('Cek email untuk konfirmasi! 📬',false);
-    }
-    async function signInEmail(){
-      const e=document.getElementById('emailInput').value.trim(),p=document.getElementById('passwordInput').value;
-      if(!e||!p)return showAuthError('Isi email dan password!');
-      const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});
-      if(error)return showAuthError(error.message);onAuth(data.session);
-    }
+    async function signUpEmail(){const e=document.getElementById('emailInput').value.trim(),p=document.getElementById('passwordInput').value;if(!e||!p)return showAuthError('Isi email dan password!');if(p.length<6)return showAuthError('Password minimal 6 karakter!');const{error}=await sb.auth.signUp({email:e,password:p});if(error)return showAuthError(error.message);showAuthError('Cek email untuk konfirmasi! 📬',false)}
+    async function signInEmail(){const e=document.getElementById('emailInput').value.trim(),p=document.getElementById('passwordInput').value;if(!e||!p)return showAuthError('Isi email dan password!');const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error)return showAuthError(error.message);onAuth(data.session)}
     async function logout(){await sb.auth.signOut();currentUser=null;notes=[];activeNoteId=null;showPage('login')}
-    function showAuthError(msg,isErr=true){
-      const el=document.getElementById('authError');el.textContent=msg;
-      el.className=`mt-4 text-sm font-body ${isErr?'text-red-500':'text-green-600'}`;
-      el.classList.remove('hidden');setTimeout(()=>el.classList.add('hidden'),5000);
-    }
-    async function onAuth(session){
-      if(!session)return showPage('login');currentUser=session.user;
-      const m=currentUser.user_metadata||{};
-      document.getElementById('userName').textContent=m.full_name||m.name||currentUser.email?.split('@')[0]||'User';
-      document.getElementById('userName').classList.remove('hidden');
-      if(m.avatar_url||m.picture){document.getElementById('userAvatar').src=m.avatar_url||m.picture;document.getElementById('userAvatar').classList.remove('hidden')}
-      showPage('app');await loadNotes();
-    }
+    function showAuthError(msg,isErr=true){const el=document.getElementById('authError');el.textContent=msg;el.className=`mt-4 text-sm font-body ${isErr?'text-red-500':'text-green-600'}`;el.classList.remove('hidden');setTimeout(()=>el.classList.add('hidden'),5000)}
+    async function onAuth(session){if(!session)return showPage('login');currentUser=session.user;const m=currentUser.user_metadata||{};document.getElementById('userName').textContent=m.full_name||m.name||currentUser.email?.split('@')[0]||'User';document.getElementById('userName').classList.remove('hidden');if(m.avatar_url||m.picture){document.getElementById('userAvatar').src=m.avatar_url||m.picture;document.getElementById('userAvatar').classList.remove('hidden')}showPage('app');await loadNotes()}
 
     // ===== SIDEBAR =====
-    function toggleSidebar(){
-      sidebarOpen=!sidebarOpen;
-      document.getElementById('sidebar').classList.toggle('collapsed',!sidebarOpen);
-      const ov=document.getElementById('sidebarOverlay');
-      (sidebarOpen&&innerWidth<=640)?ov.classList.add('show'):ov.classList.remove('show');
-    }
+    function toggleSidebar(){sidebarOpen=!sidebarOpen;document.getElementById('sidebar').classList.toggle('collapsed',!sidebarOpen);const ov=document.getElementById('sidebarOverlay');(sidebarOpen&&innerWidth<=640)?ov.classList.add('show'):ov.classList.remove('show')}
 
     function renderSidebar(){
       const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
-      const filtered=notes.filter(n=>{
-        if(!q)return true;
-        const blocks=parseBlocks(n.content);
-        const txt=blocks.map(b=>b.text||'').join(' ').toLowerCase();
-        return(n.title||'').toLowerCase().includes(q)||txt.includes(q);
-      }).sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
-
+      const filtered=notes.filter(n=>{if(!q)return true;const blocks=parseBlocks(n.content);const txt=blocks.map(b=>(b.html||'').replace(/<[^>]*>/g,'')).join(' ').toLowerCase();return(n.title||'').toLowerCase().includes(q)||txt.includes(q)}).sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
       document.getElementById('sidebarCount').textContent=notes.length;
       const list=document.getElementById('sidebarList');
-
-      if(!filtered.length){
-        list.innerHTML=`<div class="text-center py-8 px-4"><p class="text-ink/25 text-xs font-body">${q?'Tidak ditemukan':'Belum ada catatan'}</p></div>`;return;
-      }
-
-      const cm={'note-yellow':'#fff9c4','note-pink':'#f8bbd0','note-blue':'#b3e5fc','note-green':'#c8e6c9','note-orange':'#ffe0b2','note-purple':'#e1bee7'};
-
+      if(!filtered.length){list.innerHTML=`<div class="text-center py-8"><p class="text-ink/25 text-xs font-body">${q?'Tidak ditemukan':'Belum ada catatan'}</p></div>`;return}
       list.innerHTML=filtered.map(n=>{
-        const blocks=parseBlocks(n.content);
-        const preview=blocks.map(b=>(b.text||'').replace(/<[^>]*>/g,'')).join(' ').substring(0,50);
-        const isAct=activeNoteId===n.id;
-        return`<div class="sidebar-item ${isAct?'active':''} px-3 py-2.5 mx-1 rounded-lg my-0.5 flex gap-2.5 items-start slide-in" onclick="openNote('${n.id}')">
-          <div class="sidebar-color-dot mt-1.5" style="background:${cm[n.color]||'#fff9c4'};box-shadow:0 0 0 1px rgba(0,0,0,.08)"></div>
-          <div class="flex-1 min-w-0">
-            <div class="font-body text-sm font-medium text-ink/80 truncate">${esc(n.title||'Tanpa Judul')}</div>
-            <div class="font-body text-[11px] text-ink/35 truncate mt-0.5">${esc(preview)||'Catatan kosong...'}</div>
-            <div class="font-body text-[10px] text-ink/25 mt-1">${relDate(n.updated_at||n.created_at)}</div>
-          </div></div>`;
+        const blocks=parseBlocks(n.content);const preview=blocks.map(b=>(b.html||'').replace(/<[^>]*>/g,'')).join(' ').substring(0,50);
+        return`<div class="sidebar-item ${activeNoteId===n.id?'active':''} px-3 py-2.5 mx-1 rounded-lg my-0.5 flex gap-2.5 items-start slide-in" onclick="openNote('${n.id}')">
+          <div class="sidebar-color-dot mt-1.5" style="background:${colorMap[n.color]||'#fff9c4'};box-shadow:0 0 0 1px rgba(0,0,0,.08)"></div>
+          <div class="flex-1 min-w-0"><div class="font-body text-sm font-medium text-ink/80 truncate">${esc(n.title||'Tanpa Judul')}</div>
+          <div class="font-body text-[11px] text-ink/35 truncate mt-0.5">${esc(preview)||'Catatan kosong...'}</div>
+          <div class="font-body text-[10px] text-ink/25 mt-1">${relDate(n.updated_at||n.created_at)}</div></div></div>`;
       }).join('');
     }
 
     // ===== NOTES CRUD =====
-    function parseBlocks(content){
-      if(!content)return[];
-      try{const p=JSON.parse(content);return Array.isArray(p)?p:[]}catch{return[]}
-    }
+    function parseBlocks(c){if(!c)return[];try{const p=JSON.parse(c);return Array.isArray(p)?p:[]}catch{return[]}}
 
     async function loadNotes(){
       const{data,error}=await sb.from('notes').select('*').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
-      if(error){console.error(error);return}
-      notes=data||[];renderSidebar();
-      if(activeNoteId&&notes.find(n=>n.id===activeNoteId))openNote(activeNoteId);
-      else{activeNoteId=null;showWelcome()}
+      if(error){console.error(error);return}notes=data||[];renderSidebar();
+      if(activeNoteId&&notes.find(n=>n.id===activeNoteId))openNote(activeNoteId);else{activeNoteId=null;showWelcome()}
     }
 
     async function addNote(){
       const now=new Date().toISOString();
-      const firstBlock={id:uid(),html:'',x:80,y:80,w:400};
-      const n={user_id:currentUser.id,title:'Catatan Baru',content:JSON.stringify([firstBlock]),color:'note-yellow',pos_x:0,pos_y:0,width:240,height:180,z_index:1,created_at:now,updated_at:now};
+      const n={user_id:currentUser.id,title:'Catatan Baru',content:'[]',color:'note-yellow',pos_x:0,pos_y:0,width:240,height:180,z_index:1,created_at:now,updated_at:now};
       const{data,error}=await sb.from('notes').insert(n).select().single();
-      if(error){console.error(error);return}
-      notes.unshift(data);renderSidebar();openNote(data.id);
+      if(error){console.error(error);return}notes.unshift(data);renderSidebar();openNote(data.id);
       if(innerWidth<=640&&sidebarOpen)toggleSidebar();
     }
 
     async function deleteCurrentNote(){
       if(!activeNoteId||!confirm('Hapus catatan ini?'))return;
       await sb.from('notes').delete().eq('id',activeNoteId);
-      notes=notes.filter(n=>n.id!==activeNoteId);
-      activeNoteId=null;showWelcome();renderSidebar();
+      notes=notes.filter(n=>n.id!==activeNoteId);activeNoteId=null;showWelcome();renderSidebar();
     }
 
     function scheduleNoteSave(){
       const note=notes.find(n=>n.id===activeNoteId);if(!note)return;
-      clearTimeout(note._t);
-      note._t=setTimeout(async()=>{
+      clearTimeout(note._t);note._t=setTimeout(async()=>{
         note.updated_at=new Date().toISOString();
         await sb.from('notes').update({title:note.title,content:note.content,color:note.color,updated_at:note.updated_at}).eq('id',note.id);
-        document.getElementById('noteDate').textContent=formatDate(note.updated_at);
-        renderSidebar();
-      },600);
+        document.getElementById('noteDate').textContent=formatDate(note.updated_at);renderSidebar();
+      },700);
     }
 
-    // ===== OPEN NOTE =====
+    // ===== OPEN / CLOSE NOTE =====
     function openNote(id){
       const note=notes.find(n=>n.id===id);if(!note)return;
-      activeNoteId=id;selectedBlockId=null;
+      activeNoteId=id;selectedElId=null;editingElId=null;
       document.getElementById('welcomeState').classList.add('hidden');
       document.getElementById('noteToolbar').classList.remove('hidden');
-      document.getElementById('fabAdd').classList.remove('hidden');
-      document.getElementById('fabAdd').classList.add('flex');
-
-      // Title
-      const titleInput=document.getElementById('noteTitleInput');
-      titleInput.value=note.title||'';
-      titleInput.oninput=()=>{note.title=titleInput.value;scheduleNoteSave()};
-
-      // Date
+      document.getElementById('noteTitleInput').value=note.title||'';
+      document.getElementById('noteTitleInput').oninput=function(){note.title=this.value;scheduleNoteSave()};
       document.getElementById('noteDate').textContent=formatDate(note.updated_at||note.created_at);
-
-      // Color dots
-      document.querySelectorAll('.note-color-dot').forEach(d=>{
-        d.classList.toggle('active',d.dataset.color===note.color);
-      });
-
-      // Canvas bg tint
-      const wrapper=document.getElementById('canvasWrapper');
-      wrapper.style.background='';// reset
-      if(canvasBg[note.color]){
-        wrapper.style.backgroundImage=`linear-gradient(${canvasBg[note.color]},${canvasBg[note.color]})`;
-        wrapper.style.backgroundBlendMode='overlay';
-      }
-
-      renderBlocks();
-      renderSidebar();
+      document.querySelectorAll('.note-color-dot').forEach(d=>d.classList.toggle('active',d.dataset.color===note.color));
+      applyCanvasTint(note.color);
+      renderBlocks();renderSidebar();
       if(innerWidth<=640&&sidebarOpen)toggleSidebar();
     }
 
@@ -548,188 +379,251 @@
       document.getElementById('welcomeState').classList.remove('hidden');
       document.getElementById('noteToolbar').classList.add('hidden');
       document.getElementById('noteCanvas').innerHTML='';
-      document.getElementById('fabAdd').classList.add('hidden');
-      const wrapper=document.getElementById('canvasWrapper');
-      wrapper.style.backgroundImage='';wrapper.style.backgroundBlendMode='';
+      applyCanvasTint(null);
     }
 
-    // ===== BLOCKS =====
-    function getBlocks(){
-      const note=notes.find(n=>n.id===activeNoteId);
-      return note?parseBlocks(note.content):[];
-    }
-    function saveBlocks(blocks){
-      const note=notes.find(n=>n.id===activeNoteId);if(!note)return;
-      note.content=JSON.stringify(blocks);scheduleNoteSave();
-    }
-
-    function addTextBlock(){
-      if(!activeNoteId)return;
-      const blocks=getBlocks();
-      const wrapper=document.getElementById('canvasWrapper');
-      const x=wrapper.scrollLeft+wrapper.clientWidth/2-150+(Math.random()*60-30);
-      const y=wrapper.scrollTop+wrapper.clientHeight/2-30+(Math.random()*60-30);
-      const b={id:uid(),html:'',x:Math.max(20,x),y:Math.max(20,y),w:320};
-      blocks.push(b);saveBlocks(blocks);renderBlocks();
-      // Focus new block
-      setTimeout(()=>{
-        const el=document.getElementById('block-'+b.id);
-        if(el){selectBlock(b.id);el.querySelector('.text-block-content')?.focus()}
-      },50);
+    function applyCanvasTint(color){
+      const w=document.getElementById('canvasWrapper');
+      // Remove old tint
+      w.querySelectorAll('.canvas-tint').forEach(e=>e.remove());
+      if(color&&tintMap[color]){
+        const t=document.createElement('div');t.className='canvas-tint';
+        t.style.background=tintMap[color];
+        w.prepend(t);
+      }
     }
 
-    function deleteBlock(bid){
-      let blocks=getBlocks();blocks=blocks.filter(b=>b.id!==bid);
-      if(selectedBlockId===bid)selectedBlockId=null;
-      saveBlocks(blocks);renderBlocks();
-    }
+    // ===== BLOCKS (TEXT ELEMENTS) =====
+    function getBlocks(){const note=notes.find(n=>n.id===activeNoteId);return note?parseBlocks(note.content):[]}
+    function saveBlocks(blocks){const note=notes.find(n=>n.id===activeNoteId);if(!note)return;note.content=JSON.stringify(blocks);scheduleNoteSave()}
 
     function renderBlocks(){
       const canvas=document.getElementById('noteCanvas');
-      canvas.innerHTML='';canvas.style.width='3000px';canvas.style.height='3000px';
-      const blocks=getBlocks();
-      blocks.forEach(b=>{
-        const div=document.createElement('div');
-        div.id='block-'+b.id;
-        div.className=`text-block ${selectedBlockId===b.id?'selected':''} block-appear`;
-        div.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w||320}px`;
+      canvas.innerHTML='';canvas.style.width='4000px';canvas.style.height='4000px';
+      getBlocks().forEach(b=>createBlockEl(b));
+    }
 
-        div.innerHTML=`
-          <div class="block-drag" title="Seret">⠿</div>
-          <button class="block-delete" onclick="deleteBlock('${b.id}')" title="Hapus blok">✕</button>
-          <div class="text-block-content" contenteditable="true">${b.html||''}</div>`;
+    function createBlockEl(b){
+      const div=document.createElement('div');
+      div.id='el-'+b.id;div.dataset.bid=b.id;
+      div.className='txt-el';
+      div.style.left=b.x+'px';div.style.top=b.y+'px';
+      if(b.w)div.style.width=b.w+'px';
 
-        // Click to select
-        div.addEventListener('mousedown',e=>{
-          if(!e.target.closest('.block-delete'))selectBlock(b.id);
-        });
-        div.addEventListener('touchstart',e=>{
-          if(!e.target.closest('.block-delete'))selectBlock(b.id);
-        },{passive:true});
+      div.innerHTML=`
+        <div class="sel-handle tl"></div><div class="sel-handle tr"></div>
+        <div class="sel-handle bl"></div><div class="sel-handle br"></div>
+        <div class="txt-content" contenteditable="false">${b.html||''}</div>`;
 
-        // Drag via handle
-        const handle=div.querySelector('.block-drag');
-        handle.addEventListener('mousedown',e=>startBlockDrag(e,b,div));
-        handle.addEventListener('touchstart',e=>startBlockDrag(e,b,div),{passive:false});
+      const content=div.querySelector('.txt-content');
 
-        // Content editing
-        const content=div.querySelector('.text-block-content');
-        content.addEventListener('input',()=>{
-          b.html=content.innerHTML;saveBlocks(getBlocks().map(bl=>bl.id===b.id?{...bl,html:b.html}:bl));
-        });
-        content.addEventListener('focus',()=>selectBlock(b.id));
+      // Single click = select
+      div.addEventListener('mousedown',e=>{
+        if(e.target.closest('.sel-handle'))return;
+        e.stopPropagation();
+        if(editingElId===b.id)return; // already editing, let cursor work
+        selectEl(b.id);
+        // Start drag if selected (not editing)
+        if(editingElId!==b.id)startDrag(e,b,div);
+      });
 
-        canvas.appendChild(div);
+      // Double click = edit
+      div.addEventListener('dblclick',e=>{
+        e.stopPropagation();
+        startEditing(b.id);
+      });
+
+      // Touch: tap=select, hold=drag, double tap=edit
+      let lastTap=0;
+      div.addEventListener('touchstart',e=>{
+        if(e.target.closest('.sel-handle'))return;
+        e.stopPropagation();
+        const now=Date.now();
+        if(now-lastTap<350){startEditing(b.id);lastTap=0;return}
+        lastTap=now;
+        if(editingElId===b.id)return;
+        selectEl(b.id);
+        startDrag(e,b,div);
+      },{passive:false});
+
+      // Content input → save
+      content.addEventListener('input',()=>{
+        const blocks=getBlocks().map(bl=>bl.id===b.id?{...bl,html:content.innerHTML}:bl);
+        saveBlocks(blocks);
+      });
+
+      // Prevent contenteditable from stealing mousedown for drag
+      content.addEventListener('mousedown',e=>{
+        if(editingElId!==b.id){e.preventDefault()}
+      });
+
+      document.getElementById('noteCanvas').appendChild(div);
+    }
+
+    function selectEl(id){
+      if(editingElId&&editingElId!==id)stopEditing();
+      selectedElId=id;
+      document.querySelectorAll('.txt-el').forEach(el=>{
+        el.classList.toggle('selected',el.dataset.bid===id);
       });
     }
 
-    function selectBlock(bid){
-      selectedBlockId=bid;
-      document.querySelectorAll('.text-block').forEach(el=>{
-        el.classList.toggle('selected',el.id==='block-'+bid);
-      });
+    function deselectAll(){
+      if(editingElId)stopEditing();
+      selectedElId=null;
+      document.querySelectorAll('.txt-el.selected').forEach(el=>el.classList.remove('selected'));
     }
 
-    // Click canvas to deselect
-    document.addEventListener('mousedown',e=>{
-      if(!e.target.closest('.text-block')&&!e.target.closest('.fmt-btn')&&!e.target.closest('.fmt-bar')&&!e.target.closest('.color-picker-dropdown')){
-        if(selectedBlockId){selectedBlockId=null;document.querySelectorAll('.text-block.selected').forEach(el=>el.classList.remove('selected'))}
-        closeAllColorPickers();
+    function startEditing(id){
+      selectEl(id);editingElId=id;
+      const el=document.getElementById('el-'+id);if(!el)return;
+      el.classList.add('editing');
+      const content=el.querySelector('.txt-content');
+      content.contentEditable='true';
+      content.focus();
+      // Place cursor at end
+      const sel=window.getSelection();sel.selectAllChildren(content);sel.collapseToEnd();
+    }
+
+    function stopEditing(){
+      if(!editingElId)return;
+      const el=document.getElementById('el-'+editingElId);
+      if(el){
+        el.classList.remove('editing');
+        el.querySelector('.txt-content').contentEditable='false';
       }
-    });
+      // Remove empty blocks
+      const blocks=getBlocks();
+      const block=blocks.find(b=>b.id===editingElId);
+      if(block&&!block.html?.replace(/<[^>]*>/g,'').trim()){
+        // Block is empty after editing, remove it
+        const filtered=blocks.filter(b=>b.id!==editingElId);
+        saveBlocks(filtered);
+        el?.remove();
+        if(selectedElId===editingElId)selectedElId=null;
+      }
+      editingElId=null;
+    }
 
-    // ===== BLOCK DRAG =====
+    // ===== CLICK ON CANVAS = CREATE TEXT =====
+    function onCanvasClick(e){
+      if(e.target.closest('.txt-el'))return; // clicked on a block
+      if(!activeNoteId)return;
+
+      // Deselect
+      deselectAll();closeAllPickers();
+
+      // Create new text element at click position
+      const canvas=document.getElementById('noteCanvas');
+      const rect=canvas.getBoundingClientRect();
+      const wrapper=document.getElementById('canvasWrapper');
+      const x=e.clientX-rect.left;
+      const y=e.clientY-rect.top;
+
+      const b={id:uid(),html:'',x:Math.max(10,x),y:Math.max(10,y),w:300};
+      const blocks=getBlocks();blocks.push(b);saveBlocks(blocks);
+      createBlockEl(b);
+
+      // Immediately start editing
+      setTimeout(()=>startEditing(b.id),30);
+    }
+
+    // ===== DRAG =====
     function gp(e){return e.touches?.[0]?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY}}
 
-    function startBlockDrag(e,block,el){
-      e.preventDefault();e.stopPropagation();
+    function startDrag(e,block,el){
+      if(editingElId===block.id)return;
+      e.preventDefault();
       const p=gp(e);
-      dragState={block,el,sx:p.x,sy:p.y,ox:block.x,oy:block.y};
+      dragState={block,el,sx:p.x,sy:p.y,ox:block.x,oy:block.y,moved:false};
       el.classList.add('dragging');
-      document.addEventListener('mousemove',onBlockDrag);document.addEventListener('mouseup',endBlockDrag);
-      document.addEventListener('touchmove',onBlockDrag,{passive:false});document.addEventListener('touchend',endBlockDrag);
+      document.addEventListener('mousemove',onDrag);document.addEventListener('mouseup',endDrag);
+      document.addEventListener('touchmove',onDrag,{passive:false});document.addEventListener('touchend',endDrag);
     }
-    function onBlockDrag(e){
+
+    function onDrag(e){
       if(!dragState)return;e.preventDefault();
       const p=gp(e);
-      dragState.block.x=Math.max(0,dragState.ox+p.x-dragState.sx);
-      dragState.block.y=Math.max(0,dragState.oy+p.y-dragState.sy);
+      const dx=p.x-dragState.sx,dy=p.y-dragState.sy;
+      if(Math.abs(dx)>3||Math.abs(dy)>3)dragState.moved=true;
+      if(!dragState.moved)return;
+      dragState.block.x=Math.max(0,dragState.ox+dx);
+      dragState.block.y=Math.max(0,dragState.oy+dy);
       dragState.el.style.left=dragState.block.x+'px';
       dragState.el.style.top=dragState.block.y+'px';
     }
-    function endBlockDrag(){
+
+    function endDrag(){
       if(!dragState)return;
       dragState.el.classList.remove('dragging');
-      const blocks=getBlocks().map(b=>b.id===dragState.block.id?{...b,x:dragState.block.x,y:dragState.block.y}:b);
-      saveBlocks(blocks);dragState=null;
-      document.removeEventListener('mousemove',onBlockDrag);document.removeEventListener('mouseup',endBlockDrag);
-      document.removeEventListener('touchmove',onBlockDrag);document.removeEventListener('touchend',endBlockDrag);
+      if(dragState.moved){
+        const blocks=getBlocks().map(b=>b.id===dragState.block.id?{...b,x:dragState.block.x,y:dragState.block.y}:b);
+        saveBlocks(blocks);
+      }
+      dragState=null;
+      document.removeEventListener('mousemove',onDrag);document.removeEventListener('mouseup',endDrag);
+      document.removeEventListener('touchmove',onDrag);document.removeEventListener('touchend',endDrag);
     }
 
     // ===== FORMATTING =====
-    function execFmt(cmd,val){document.execCommand(cmd,false,val||null);updateFmtButtons()}
+    function execFmt(cmd,val){document.execCommand(cmd,false,val||null);updateFmtBtns()}
     function changeFontSize(val){document.execCommand('fontSize',false,val)}
-
-    function applyTextColor(color){
-      document.execCommand('foreColor',false,color);
-      document.getElementById('textColorIndicator').style.background=color;
-      closeAllColorPickers();
-    }
-    function applyHighlight(color){
-      if(color==='transparent')document.execCommand('removeFormat',false,null);
-      else document.execCommand('hiliteColor',false,color);
-      closeAllColorPickers();
-    }
-
-    function toggleColorPicker(id){
-      const el=document.getElementById(id);
-      const wasOpen=el.classList.contains('show');
-      closeAllColorPickers();
-      if(!wasOpen)el.classList.add('show');
-    }
-    function closeAllColorPickers(){
-      document.querySelectorAll('.color-picker-dropdown').forEach(el=>el.classList.remove('show'));
-    }
-
-    function updateFmtButtons(){
+    function setTC(c){document.execCommand('foreColor',false,c);document.getElementById('tcBar').style.background=c;closeAllPickers()}
+    function setHL(c){if(!c)document.execCommand('removeFormat');else document.execCommand('hiliteColor',false,c);closeAllPickers()}
+    function togglePicker(id){const el=document.getElementById(id);const was=el.classList.contains('show');closeAllPickers();if(!was)el.classList.add('show')}
+    function closeAllPickers(){document.querySelectorAll('.color-picker-dropdown').forEach(e=>e.classList.remove('show'))}
+    function updateFmtBtns(){
       document.getElementById('btnBold')?.classList.toggle('active',document.queryCommandState('bold'));
       document.getElementById('btnItalic')?.classList.toggle('active',document.queryCommandState('italic'));
       document.getElementById('btnUnderline')?.classList.toggle('active',document.queryCommandState('underline'));
       document.getElementById('btnStrike')?.classList.toggle('active',document.queryCommandState('strikeThrough'));
     }
-    document.addEventListener('selectionchange',updateFmtButtons);
+    document.addEventListener('selectionchange',updateFmtBtns);
 
     // ===== NOTE COLOR =====
     function changeNoteColor(el){
       const note=notes.find(n=>n.id===activeNoteId);if(!note)return;
       note.color=el.dataset.color;
       document.querySelectorAll('.note-color-dot').forEach(d=>d.classList.toggle('active',d.dataset.color===note.color));
-      const wrapper=document.getElementById('canvasWrapper');
-      if(canvasBg[note.color]){
-        wrapper.style.backgroundImage=`linear-gradient(${canvasBg[note.color]},${canvasBg[note.color]})`;
-      }
-      scheduleNoteSave();renderSidebar();
+      applyCanvasTint(note.color);scheduleNoteSave();renderSidebar();
     }
 
     // ===== KEYBOARD =====
     document.addEventListener('keydown',e=>{
       if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();if(currentUser)addNote()}
+      // Delete selected element
+      if((e.key==='Delete'||e.key==='Backspace')&&selectedElId&&!editingElId){
+        e.preventDefault();
+        const blocks=getBlocks().filter(b=>b.id!==selectedElId);
+        document.getElementById('el-'+selectedElId)?.remove();
+        selectedElId=null;saveBlocks(blocks);
+      }
+      // Escape = deselect or stop editing
+      if(e.key==='Escape'){
+        if(editingElId)stopEditing();
+        else deselectAll();
+      }
+      // Enter on selected (not editing) = start editing
+      if(e.key==='Enter'&&selectedElId&&!editingElId){
+        e.preventDefault();startEditing(selectedElId);
+      }
     });
 
-    // ===== SIDEBAR RESPONSIVE =====
-    window.addEventListener('resize',()=>{
-      const ov=document.getElementById('sidebarOverlay');
-      innerWidth>640?ov.classList.remove('show'):sidebarOpen&&ov.classList.add('show');
+    // Click outside blocks = deselect
+    document.addEventListener('mousedown',e=>{
+      if(!e.target.closest('.txt-el')&&!e.target.closest('.fmt-bar')&&!e.target.closest('.fmt-btn')&&!e.target.closest('.color-picker-dropdown')&&!e.target.closest('.note-color-dot')&&!e.target.closest('#noteTitleInput')){
+        closeAllPickers();
+      }
     });
+
+    window.addEventListener('resize',()=>{const ov=document.getElementById('sidebarOverlay');innerWidth>640?ov.classList.remove('show'):sidebarOpen&&ov.classList.add('show')});
 
     // ===== INIT =====
     async function init(){
       showPage('loading');
       const{data:{session}}=await sb.auth.getSession();
       if(session)await onAuth(session);else showPage('login');
-      sb.auth.onAuthStateChange(async(ev,session)=>{
-        if(ev==='SIGNED_IN'&&session&&!currentUser)await onAuth(session);
-      });
+      sb.auth.onAuthStateChange(async(ev,s)=>{if(ev==='SIGNED_IN'&&s&&!currentUser)await onAuth(s)});
     }
     init();
   </script>
