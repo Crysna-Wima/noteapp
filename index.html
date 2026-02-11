@@ -174,78 +174,9 @@
     }
     .color-dot:hover { transform: scale(1.2); }
     .color-dot.active { border-color: #2c1810; transform: scale(1.15); }
-
-    .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
   </style>
 </head>
 <body class="overflow-hidden">
-
-  <!-- SETUP MODAL -->
-  <div id="setupModal" class="hidden fixed inset-0 modal-overlay z-[9999] flex items-center justify-center p-4">
-    <div class="bg-cream rounded-2xl p-8 max-w-lg w-full shadow-2xl fade-in font-body max-h-[90vh] overflow-y-auto">
-      <h2 class="font-hand text-4xl text-ink mb-2">⚙️ Setup Supabase</h2>
-      <p class="text-ink/70 mb-6 text-sm leading-relaxed">
-        Aplikasi ini butuh Supabase untuk menyimpan catatan. Masukkan kredensial Supabase-mu di bawah.
-      </p>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-ink/80 mb-1">Supabase URL</label>
-          <input id="setupUrl" type="text" placeholder="https://xxxxx.supabase.co"
-            class="w-full px-4 py-2.5 rounded-lg border border-cork/40 bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-cork" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-ink/80 mb-1">Supabase Anon Key</label>
-          <input id="setupKey" type="text" placeholder="eyJhbGciOiJIUz..."
-            class="w-full px-4 py-2.5 rounded-lg border border-cork/40 bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-cork" />
-        </div>
-        <button onclick="saveSupabaseConfig()" 
-          class="w-full py-3 rounded-xl bg-ink text-cream font-medium hover:bg-ink/90 transition-colors text-sm">
-          Simpan &amp; Lanjutkan
-        </button>
-      </div>
-      <details class="mt-6">
-        <summary class="text-xs text-ink/50 cursor-pointer hover:text-ink/70">📖 Cara setup Supabase (klik untuk buka)</summary>
-        <div class="mt-3 text-xs text-ink/60 space-y-2 leading-relaxed">
-          <p><strong>1.</strong> Buka <a href="https://supabase.com" target="_blank" class="underline text-cork-dark">supabase.com</a> &rarr; buat akun gratis &rarr; buat project baru.</p>
-          <p><strong>2.</strong> Buka <strong>Settings &rarr; API</strong> &rarr; copy <em>Project URL</em> dan <em>anon public key</em>.</p>
-          <p><strong>3.</strong> Buka <strong>Authentication &rarr; Providers</strong> &rarr; aktifkan <strong>Google</strong> (butuh Google OAuth Client ID dari <a href="https://console.cloud.google.com" target="_blank" class="underline text-cork-dark">Google Cloud Console</a>).</p>
-          <p><strong>4.</strong> Di <strong>Authentication &rarr; URL Configuration</strong>, tambahkan URL GitHub Pages-mu sebagai <strong>Redirect URL</strong>:<br>
-          <code class="bg-ink/5 px-1.5 py-0.5 rounded text-[11px]">https://username.github.io/repo-name/</code></p>
-          <p><strong>5.</strong> Buka <strong>SQL Editor</strong> dan jalankan SQL berikut:</p>
-          <pre class="bg-ink/5 p-3 rounded-lg overflow-x-auto mt-2 whitespace-pre text-[11px] leading-relaxed">-- Buat tabel notes
-CREATE TABLE notes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  title TEXT DEFAULT 'Catatan Baru',
-  content TEXT DEFAULT '',
-  color TEXT DEFAULT 'note-yellow',
-  pos_x FLOAT DEFAULT 100,
-  pos_y FLOAT DEFAULT 100,
-  width FLOAT DEFAULT 240,
-  height FLOAT DEFAULT 180,
-  z_index INT DEFAULT 1,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Aktifkan Row Level Security
-ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own notes"
-  ON notes FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can create own notes"
-  ON notes FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own notes"
-  ON notes FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own notes"
-  ON notes FOR DELETE USING (auth.uid() = user_id);</pre>
-        </div>
-      </details>
-    </div>
-  </div>
 
   <!-- LOGIN PAGE -->
   <div id="loginPage" class="hidden login-bg flex items-center justify-center min-h-screen p-4">
@@ -293,10 +224,6 @@ CREATE POLICY "Users can delete own notes"
       </div>
 
       <p id="authError" class="mt-4 text-red-500 text-sm font-body hidden"></p>
-
-      <button onclick="showSetup()" class="mt-8 text-xs text-ink/30 hover:text-ink/50 transition-colors font-body">
-        ⚙️ Ubah Supabase Config
-      </button>
     </div>
   </div>
 
@@ -356,38 +283,19 @@ CREATE POLICY "Users can delete own notes"
   </div>
 
   <script>
+    // ===== SUPABASE CONFIG (hardcoded) =====
+    const SUPABASE_URL = 'https://ejkjiwkzvmsqbkeuzold.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqa2ppd2t6dm1zcWJrZXV6b2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MTUxMjAsImV4cCI6MjA4NjM5MTEyMH0.6hxr8lqW5idrWfwfPhMWI2M9oUrr2NlZgJE9xOlM6Fc';
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     // ===== STATE =====
-    // PENTING: variable dinamai 'sb' bukan 'supabase' karena library CDN
-    // sudah mendaftarkan global 'supabase' — kalau pakai nama sama akan error
-    let sb = null;
     let currentUser = null;
     let notes = [];
     let selectedColor = 'note-yellow';
     let maxZ = 1;
     let dragState = null;
     let resizeState = null;
-
-    // ===== CONFIG =====
-    function getConfig() {
-      const url = localStorage.getItem('sb_url');
-      const key = localStorage.getItem('sb_key');
-      return (url && key) ? { url, key } : null;
-    }
-
-    function saveSupabaseConfig() {
-      const url = document.getElementById('setupUrl').value.trim();
-      const key = document.getElementById('setupKey').value.trim();
-      if (!url || !key) return alert('Isi kedua field!');
-      localStorage.setItem('sb_url', url);
-      localStorage.setItem('sb_key', key);
-      location.reload();
-    }
-
-    function showSetup() {
-      const c = getConfig();
-      if (c) { document.getElementById('setupUrl').value = c.url; document.getElementById('setupKey').value = c.key; }
-      document.getElementById('setupModal').classList.remove('hidden');
-    }
 
     // ===== AUTH =====
     async function loginWithGoogle() {
@@ -616,15 +524,6 @@ CREATE POLICY "Users can delete own notes"
     // ===== INIT =====
     async function init() {
       showPage('loading');
-      const cfg = getConfig();
-      if (!cfg) { showPage('login'); document.getElementById('loadingPage').classList.add('hidden'); showSetup(); return; }
-      try {
-        // Gunakan window.supabase.createClient dari CDN library
-        sb = window.supabase.createClient(cfg.url, cfg.key);
-      } catch(err) {
-        console.error('Supabase init error:', err);
-        showPage('login'); document.getElementById('loadingPage').classList.add('hidden'); showSetup(); return;
-      }
 
       const { data: { session } } = await sb.auth.getSession();
       if (session) await onAuth(session); else showPage('login');
