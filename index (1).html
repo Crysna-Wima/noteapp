@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catatan Saku — Simpan Catatanmu di Awan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            hand: ['Caveat', 'cursive'],
+            body: ['DM Sans', 'sans-serif'],
+          },
+          colors: {
+            cork: '#c4a882',
+            'cork-dark': '#a68b6b',
+            cream: '#fdf6ec',
+            ink: '#2c1810',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; }
+
+    .cork-bg {
+      background-color: #c4a882;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(0,0,0,0.05) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 40%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+    }
+
+    .sticky-note {
+      position: absolute;
+      width: 240px;
+      min-height: 180px;
+      padding: 32px 18px 18px 18px;
+      border-radius: 2px;
+      cursor: grab;
+      transition: box-shadow 0.2s, transform 0.1s;
+      user-select: none;
+      box-shadow: 2px 4px 12px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .sticky-note:hover {
+      box-shadow: 4px 8px 24px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sticky-note.dragging {
+      cursor: grabbing;
+      box-shadow: 8px 16px 40px rgba(0,0,0,0.3);
+      transform: rotate(2deg) scale(1.04);
+      z-index: 10000 !important;
+      opacity: 0.92;
+    }
+
+    .sticky-note::before {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 14px;
+      background: radial-gradient(circle at 40% 35%, #ff6b6b, #c0392b);
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3);
+      z-index: 2;
+    }
+
+    .note-title {
+      font-family: 'Caveat', cursive;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      width: 100%;
+      outline: none;
+      color: #2c1810;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .note-content {
+      font-family: 'Caveat', cursive;
+      font-size: 1.1rem;
+      border: none;
+      background: transparent;
+      width: 100%;
+      min-height: 100px;
+      outline: none;
+      color: #3d2a1a;
+      resize: none;
+      line-height: 1.5;
+    }
+
+    .note-yellow { background: #fff9c4; }
+    .note-pink { background: #f8bbd0; }
+    .note-blue { background: #b3e5fc; }
+    .note-green { background: #c8e6c9; }
+    .note-orange { background: #ffe0b2; }
+    .note-purple { background: #e1bee7; }
+
+    .delete-btn {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,0.12);
+      color: rgba(0,0,0,0.5);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s, background 0.2s;
+      z-index: 3;
+    }
+    .sticky-note:hover .delete-btn { opacity: 1; }
+    .delete-btn:hover { background: #e74c3c; color: white; }
+
+    .resize-handle {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 16px;
+      height: 16px;
+      cursor: nwse-resize;
+      opacity: 0.3;
+    }
+    .sticky-note:hover .resize-handle { opacity: 0.6; }
+
+    .login-bg {
+      background: linear-gradient(135deg, #fdf6ec 0%, #f0e6d3 50%, #e8d5b8 100%);
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+
+    #canvas { position: relative; width: 4000px; height: 4000px; }
+
+    .toolbar {
+      backdrop-filter: blur(16px);
+      background: rgba(253, 246, 236, 0.9);
+      border-bottom: 1px solid rgba(196, 168, 130, 0.3);
+    }
+
+    @keyframes noteAppear {
+      from { opacity: 0; transform: scale(0.7) rotate(-5deg); }
+      to { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+    .note-appear { animation: noteAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.5s ease-out; }
+
+    .color-dot {
+      width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s;
+    }
+    .color-dot:hover { transform: scale(1.2); }
+    .color-dot.active { border-color: #2c1810; transform: scale(1.15); }
+
+    .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+  </style>
+</head>
+<body class="overflow-hidden">
+
+  <!-- SETUP MODAL -->
+  <div id="setupModal" class="hidden fixed inset-0 modal-overlay z-[9999] flex items-center justify-center p-4">
+    <div class="bg-cream rounded-2xl p-8 max-w-lg w-full shadow-2xl fade-in font-body max-h-[90vh] overflow-y-auto">
+      <h2 class="font-hand text-4xl text-ink mb-2">⚙️ Setup Supabase</h2>
+      <p class="text-ink/70 mb-6 text-sm leading-relaxed">
+        Aplikasi ini butuh Supabase untuk menyimpan catatan. Masukkan kredensial Supabase-mu di bawah.
+      </p>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-ink/80 mb-1">Supabase URL</label>
+          <input id="setupUrl" type="text" placeholder="https://xxxxx.supabase.co"
+            class="w-full px-4 py-2.5 rounded-lg border border-cork/40 bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-cork" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-ink/80 mb-1">Supabase Anon Key</label>
+          <input id="setupKey" type="text" placeholder="eyJhbGciOiJIUz..."
+            class="w-full px-4 py-2.5 rounded-lg border border-cork/40 bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-cork" />
+        </div>
+        <button onclick="saveSupabaseConfig()" 
+          class="w-full py-3 rounded-xl bg-ink text-cream font-medium hover:bg-ink/90 transition-colors text-sm">
+          Simpan &amp; Lanjutkan
+        </button>
+      </div>
+      <details class="mt-6">
+        <summary class="text-xs text-ink/50 cursor-pointer hover:text-ink/70">📖 Cara setup Supabase (klik untuk buka)</summary>
+        <div class="mt-3 text-xs text-ink/60 space-y-2 leading-relaxed">
+          <p><strong>1.</strong> Buka <a href="https://supabase.com" target="_blank" class="underline text-cork-dark">supabase.com</a> &rarr; buat akun gratis &rarr; buat project baru.</p>
+          <p><strong>2.</strong> Buka <strong>Settings &rarr; API</strong> &rarr; copy <em>Project URL</em> dan <em>anon public key</em>.</p>
+          <p><strong>3.</strong> Buka <strong>Authentication &rarr; Providers</strong> &rarr; aktifkan <strong>Google</strong> (butuh Google OAuth Client ID dari <a href="https://console.cloud.google.com" target="_blank" class="underline text-cork-dark">Google Cloud Console</a>).</p>
+          <p><strong>4.</strong> Di <strong>Authentication &rarr; URL Configuration</strong>, tambahkan URL GitHub Pages-mu sebagai <strong>Redirect URL</strong>:<br>
+          <code class="bg-ink/5 px-1.5 py-0.5 rounded text-[11px]">https://username.github.io/repo-name/</code></p>
+          <p><strong>5.</strong> Buka <strong>SQL Editor</strong> dan jalankan SQL berikut:</p>
+          <pre class="bg-ink/5 p-3 rounded-lg overflow-x-auto mt-2 whitespace-pre text-[11px] leading-relaxed">-- Buat tabel notes
+CREATE TABLE notes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT DEFAULT 'Catatan Baru',
+  content TEXT DEFAULT '',
+  color TEXT DEFAULT 'note-yellow',
+  pos_x FLOAT DEFAULT 100,
+  pos_y FLOAT DEFAULT 100,
+  width FLOAT DEFAULT 240,
+  height FLOAT DEFAULT 180,
+  z_index INT DEFAULT 1,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Aktifkan Row Level Security
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own notes"
+  ON notes FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create own notes"
+  ON notes FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notes"
+  ON notes FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own notes"
+  ON notes FOR DELETE USING (auth.uid() = user_id);</pre>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- LOGIN PAGE -->
+  <div id="loginPage" class="hidden login-bg flex items-center justify-center min-h-screen p-4">
+    <div class="text-center fade-in max-w-md w-full">
+      <div class="mb-8">
+        <span class="font-hand text-7xl text-ink block mb-2">📌 Catatan Saku</span>
+        <p class="text-ink/60 font-body text-lg max-w-md mx-auto leading-relaxed">
+          Simpan catatan di awan. Tulis, seret, atur sesuka hati.<br>
+          Catatanmu aman &mdash; bisa diakses dari mana saja.
+        </p>
+      </div>
+
+      <button onclick="loginWithGoogle()"
+        class="inline-flex items-center gap-3 px-8 py-4 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-cork/20 group">
+        <svg class="w-6 h-6" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        <span class="font-body font-medium text-ink text-base group-hover:text-ink/80">Masuk dengan Google</span>
+      </button>
+
+      <div class="mt-6 flex items-center gap-4 max-w-xs mx-auto">
+        <div class="h-px bg-ink/10 flex-1"></div>
+        <span class="text-ink/30 text-xs font-body">atau</span>
+        <div class="h-px bg-ink/10 flex-1"></div>
+      </div>
+
+      <button onclick="toggleEmailForm()"
+        class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-ink/5 rounded-xl hover:bg-ink/10 transition-colors border border-ink/10">
+        <span class="text-lg">✉️</span>
+        <span class="font-body text-sm text-ink/70">Masuk dengan Email</span>
+      </button>
+
+      <div id="emailForm" class="hidden mt-6 max-w-sm mx-auto text-left fade-in">
+        <input id="emailInput" type="email" placeholder="email@contoh.com"
+          class="w-full px-4 py-3 rounded-xl border border-cork/30 bg-white text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-cork mb-3" />
+        <input id="passwordInput" type="password" placeholder="Password (min 6 karakter)"
+          class="w-full px-4 py-3 rounded-xl border border-cork/30 bg-white text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-cork mb-3" />
+        <div class="flex gap-2">
+          <button onclick="signUpEmail()" class="flex-1 py-3 rounded-xl bg-cork text-white font-medium text-sm hover:bg-cork-dark transition-colors">Daftar Baru</button>
+          <button onclick="signInEmail()" class="flex-1 py-3 rounded-xl bg-ink text-cream font-medium text-sm hover:bg-ink/90 transition-colors">Masuk</button>
+        </div>
+      </div>
+
+      <p id="authError" class="mt-4 text-red-500 text-sm font-body hidden"></p>
+
+      <button onclick="showSetup()" class="mt-8 text-xs text-ink/30 hover:text-ink/50 transition-colors font-body">
+        ⚙️ Ubah Supabase Config
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="appPage" class="hidden h-screen flex flex-col">
+    <header class="toolbar px-4 py-3 flex items-center justify-between z-50 shadow-sm shrink-0">
+      <div class="flex items-center gap-3">
+        <span class="font-hand text-2xl text-ink">📌 Catatan Saku</span>
+        <span id="noteCount" class="text-xs text-ink/40 font-body"></span>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+        <div class="hidden sm:flex items-center gap-1.5 mr-2">
+          <div class="color-dot note-yellow active" data-color="note-yellow" onclick="selectColor(this)"></div>
+          <div class="color-dot note-pink" data-color="note-pink" onclick="selectColor(this)"></div>
+          <div class="color-dot note-blue" data-color="note-blue" onclick="selectColor(this)"></div>
+          <div class="color-dot note-green" data-color="note-green" onclick="selectColor(this)"></div>
+          <div class="color-dot note-orange" data-color="note-orange" onclick="selectColor(this)"></div>
+          <div class="color-dot note-purple" data-color="note-purple" onclick="selectColor(this)"></div>
+        </div>
+        <button onclick="addNote()" 
+          class="hidden sm:flex items-center gap-2 px-4 py-2 bg-ink text-cream rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors shadow-md hover:shadow-lg">
+          <span class="text-lg leading-none">+</span> Catatan Baru
+        </button>
+        <div class="flex items-center gap-2 ml-1 sm:ml-2 pl-2 border-l border-ink/10">
+          <img id="userAvatar" src="" alt="" class="w-8 h-8 rounded-full object-cover border-2 border-cork/30 hidden" />
+          <span id="userName" class="text-sm text-ink/60 font-body hidden sm:block max-w-[120px] truncate"></span>
+          <button onclick="logout()" class="text-ink/40 hover:text-ink/70 transition-colors" title="Keluar">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="canvasWrapper" class="flex-1 overflow-auto cork-bg cursor-default relative">
+      <div id="canvas"></div>
+      <div id="emptyState" class="hidden absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div class="text-center">
+          <span class="text-6xl block mb-4">📝</span>
+          <p class="font-hand text-3xl text-ink/30">Belum ada catatan</p>
+          <p class="font-body text-sm text-ink/20 mt-2">Klik tombol "+" untuk mulai menulis</p>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="addNote()"
+      class="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-ink text-cream rounded-full shadow-xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform active:scale-95">
+      +
+    </button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loadingPage" class="fixed inset-0 bg-cream flex items-center justify-center z-[9998]">
+    <div class="text-center fade-in">
+      <span class="font-hand text-5xl text-ink block mb-4">📌</span>
+      <p class="font-body text-ink/40 text-sm">Memuat...</p>
+    </div>
+  </div>
+
+  <script>
+    // ===== STATE =====
+    let supabase = null;
+    let currentUser = null;
+    let notes = [];
+    let selectedColor = 'note-yellow';
+    let maxZ = 1;
+    let dragState = null;
+    let resizeState = null;
+
+    // ===== CONFIG =====
+    function getConfig() {
+      const url = localStorage.getItem('sb_url');
+      const key = localStorage.getItem('sb_key');
+      return (url && key) ? { url, key } : null;
+    }
+
+    function saveSupabaseConfig() {
+      const url = document.getElementById('setupUrl').value.trim();
+      const key = document.getElementById('setupKey').value.trim();
+      if (!url || !key) return alert('Isi kedua field!');
+      localStorage.setItem('sb_url', url);
+      localStorage.setItem('sb_key', key);
+      location.reload();
+    }
+
+    function showSetup() {
+      const c = getConfig();
+      if (c) { document.getElementById('setupUrl').value = c.url; document.getElementById('setupKey').value = c.key; }
+      document.getElementById('setupModal').classList.remove('hidden');
+    }
+
+    // ===== AUTH =====
+    async function loginWithGoogle() {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + window.location.pathname }
+      });
+      if (error) showAuthError(error.message);
+    }
+
+    function toggleEmailForm() { document.getElementById('emailForm').classList.toggle('hidden'); }
+
+    async function signUpEmail() {
+      const email = document.getElementById('emailInput').value.trim();
+      const pw = document.getElementById('passwordInput').value;
+      if (!email || !pw) return showAuthError('Isi email dan password!');
+      if (pw.length < 6) return showAuthError('Password minimal 6 karakter!');
+      const { error } = await supabase.auth.signUp({ email, password: pw });
+      if (error) return showAuthError(error.message);
+      showAuthError('Cek email untuk konfirmasi! 📬', false);
+    }
+
+    async function signInEmail() {
+      const email = document.getElementById('emailInput').value.trim();
+      const pw = document.getElementById('passwordInput').value;
+      if (!email || !pw) return showAuthError('Isi email dan password!');
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (error) return showAuthError(error.message);
+      onAuth(data.session);
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      currentUser = null; notes = [];
+      document.getElementById('canvas').innerHTML = '';
+      showPage('login');
+    }
+
+    function showAuthError(msg, isError = true) {
+      const el = document.getElementById('authError');
+      el.textContent = msg;
+      el.className = `mt-4 text-sm font-body ${isError ? 'text-red-500' : 'text-green-600'}`;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    // ===== PAGES =====
+    function showPage(p) {
+      ['loginPage','appPage','loadingPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+      if (p === 'login') document.getElementById('loginPage').classList.remove('hidden');
+      else if (p === 'app') document.getElementById('appPage').classList.remove('hidden');
+      else if (p === 'loading') document.getElementById('loadingPage').classList.remove('hidden');
+    }
+
+    async function onAuth(session) {
+      if (!session) return showPage('login');
+      currentUser = session.user;
+      const meta = currentUser.user_metadata || {};
+      document.getElementById('userName').textContent = meta.full_name || meta.name || currentUser.email?.split('@')[0] || 'User';
+      document.getElementById('userName').classList.remove('hidden');
+      if (meta.avatar_url || meta.picture) {
+        document.getElementById('userAvatar').src = meta.avatar_url || meta.picture;
+        document.getElementById('userAvatar').classList.remove('hidden');
+      }
+      showPage('app');
+      await loadNotes();
+    }
+
+    // ===== NOTES CRUD =====
+    async function loadNotes() {
+      const { data, error } = await supabase.from('notes').select('*')
+        .eq('user_id', currentUser.id).order('z_index', { ascending: true });
+      if (error) { console.error('Load:', error); return; }
+      notes = data || [];
+      maxZ = notes.reduce((m, n) => Math.max(m, n.z_index || 0), 0) + 1;
+      renderAll();
+    }
+
+    async function addNote() {
+      const w = document.getElementById('canvasWrapper');
+      const x = w.scrollLeft + w.clientWidth / 2 - 120 + (Math.random() * 80 - 40);
+      const y = w.scrollTop + w.clientHeight / 2 - 90 + (Math.random() * 80 - 40);
+      const n = {
+        user_id: currentUser.id, title: 'Catatan Baru', content: '',
+        color: selectedColor, pos_x: Math.max(20, x), pos_y: Math.max(20, y),
+        width: 240, height: 180, z_index: maxZ++
+      };
+      const { data, error } = await supabase.from('notes').insert(n).select().single();
+      if (error) { console.error('Add:', error); return; }
+      notes.push(data);
+      renderNote(data, true);
+      updateCount();
+    }
+
+    async function deleteNote(id) {
+      if (!confirm('Hapus catatan ini?')) return;
+      const { error } = await supabase.from('notes').delete().eq('id', id);
+      if (error) { console.error('Del:', error); return; }
+      notes = notes.filter(n => n.id !== id);
+      const el = document.getElementById('note-' + id);
+      if (el) { el.style.cssText += 'transform:scale(0.5) rotate(10deg);opacity:0;transition:all .3s'; setTimeout(() => el.remove(), 300); }
+      updateCount();
+    }
+
+    function scheduleSave(note) {
+      clearTimeout(note._t);
+      note._t = setTimeout(async () => {
+        await supabase.from('notes').update({
+          title: note.title, content: note.content, color: note.color,
+          pos_x: note.pos_x, pos_y: note.pos_y, width: note.width,
+          height: note.height, z_index: note.z_index, updated_at: new Date().toISOString()
+        }).eq('id', note.id);
+      }, 600);
+    }
+
+    // ===== RENDER =====
+    function renderAll() {
+      document.getElementById('canvas').innerHTML = '';
+      notes.forEach(n => renderNote(n, false));
+      updateCount();
+    }
+
+    function renderNote(note, animate) {
+      const d = document.createElement('div');
+      d.id = 'note-' + note.id;
+      d.className = `sticky-note ${note.color}${animate ? ' note-appear' : ''}`;
+      d.style.cssText = `left:${note.pos_x}px;top:${note.pos_y}px;width:${note.width||240}px;min-height:${note.height||180}px;z-index:${note.z_index||1}`;
+
+      d.innerHTML = `
+        <button class="delete-btn" onclick="deleteNote('${note.id}')" title="Hapus">&#10005;</button>
+        <input class="note-title" value="${esc(note.title)}" placeholder="Judul..." onfocus="bringFront('${note.id}')">
+        <textarea class="note-content" placeholder="Tulis catatan di sini..." onfocus="bringFront('${note.id}')">${esc(note.content)}</textarea>
+        <svg class="resize-handle" viewBox="0 0 16 16"><path d="M14 14L8 14M14 14L14 8M14 14L6 6" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/></svg>`;
+
+      d.querySelector('.note-title').addEventListener('input', e => { note.title = e.target.value; scheduleSave(note); });
+      d.querySelector('.note-content').addEventListener('input', e => { note.content = e.target.value; scheduleSave(note); });
+      d.addEventListener('mousedown', e => startDrag(e, note, d));
+      d.addEventListener('touchstart', e => startDrag(e, note, d), { passive: false });
+      const h = d.querySelector('.resize-handle');
+      h.addEventListener('mousedown', e => startResize(e, note, d));
+      h.addEventListener('touchstart', e => startResize(e, note, d), { passive: false });
+      document.getElementById('canvas').appendChild(d);
+    }
+
+    function updateCount() {
+      const c = notes.length;
+      document.getElementById('noteCount').textContent = c > 0 ? `${c} catatan` : '';
+      document.getElementById('emptyState').classList.toggle('hidden', c > 0);
+    }
+
+    function bringFront(id) {
+      const n = notes.find(x => x.id === id); if (!n) return;
+      n.z_index = maxZ++;
+      const el = document.getElementById('note-' + id);
+      if (el) el.style.zIndex = n.z_index;
+      scheduleSave(n);
+    }
+
+    // ===== DRAG =====
+    function gp(e) { return e.touches?.[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY }; }
+
+    function startDrag(e, note, el) {
+      const t = e.target.tagName.toLowerCase();
+      if (t === 'input' || t === 'textarea' || t === 'button' || e.target.closest('.resize-handle') || e.target.classList.contains('delete-btn')) return;
+      e.preventDefault();
+      const p = gp(e);
+      dragState = { note, el, sx: p.x, sy: p.y, ox: note.pos_x, oy: note.pos_y };
+      el.classList.add('dragging'); bringFront(note.id);
+      document.addEventListener('mousemove', onDrag); document.addEventListener('mouseup', endDrag);
+      document.addEventListener('touchmove', onDrag, { passive: false }); document.addEventListener('touchend', endDrag);
+    }
+
+    function onDrag(e) {
+      if (!dragState) return; e.preventDefault();
+      const p = gp(e);
+      dragState.note.pos_x = Math.max(0, dragState.ox + p.x - dragState.sx);
+      dragState.note.pos_y = Math.max(0, dragState.oy + p.y - dragState.sy);
+      dragState.el.style.left = dragState.note.pos_x + 'px';
+      dragState.el.style.top = dragState.note.pos_y + 'px';
+    }
+
+    function endDrag() {
+      if (!dragState) return;
+      dragState.el.classList.remove('dragging'); scheduleSave(dragState.note); dragState = null;
+      document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', endDrag);
+      document.removeEventListener('touchmove', onDrag); document.removeEventListener('touchend', endDrag);
+    }
+
+    // ===== RESIZE =====
+    function startResize(e, note, el) {
+      e.preventDefault(); e.stopPropagation();
+      const p = gp(e);
+      resizeState = { note, el, sx: p.x, sy: p.y, ow: el.offsetWidth, oh: el.offsetHeight };
+      bringFront(note.id);
+      document.addEventListener('mousemove', onResize); document.addEventListener('mouseup', endResize);
+      document.addEventListener('touchmove', onResize, { passive: false }); document.addEventListener('touchend', endResize);
+    }
+
+    function onResize(e) {
+      if (!resizeState) return; e.preventDefault();
+      const p = gp(e);
+      const nw = Math.max(180, resizeState.ow + p.x - resizeState.sx);
+      const nh = Math.max(120, resizeState.oh + p.y - resizeState.sy);
+      resizeState.el.style.width = nw + 'px'; resizeState.el.style.minHeight = nh + 'px';
+      resizeState.note.width = nw; resizeState.note.height = nh;
+    }
+
+    function endResize() {
+      if (!resizeState) return; scheduleSave(resizeState.note); resizeState = null;
+      document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', endResize);
+      document.removeEventListener('touchmove', onResize); document.removeEventListener('touchend', endResize);
+    }
+
+    // ===== HELPERS =====
+    function selectColor(el) {
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+      el.classList.add('active'); selectedColor = el.dataset.color;
+    }
+
+    function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); if (currentUser) addNote(); }
+    });
+
+    // ===== INIT =====
+    async function init() {
+      showPage('loading');
+      const cfg = getConfig();
+      if (!cfg) { showPage('login'); document.getElementById('loadingPage').classList.add('hidden'); showSetup(); return; }
+      try { supabase = window.supabase.createClient(cfg.url, cfg.key); }
+      catch { showPage('login'); document.getElementById('loadingPage').classList.add('hidden'); showSetup(); return; }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) await onAuth(session); else showPage('login');
+
+      supabase.auth.onAuthStateChange(async (ev, session) => {
+        if (ev === 'SIGNED_IN' && session && !currentUser) await onAuth(session);
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
