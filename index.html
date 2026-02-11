@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catatan Saku — Simpan Catatanmu di Awan</title>
+  <title>Catatan Crysna — Simpan Catatanmu di Awan</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,7 +41,7 @@
     .sticky-note {
       position: absolute;
       width: 240px;
-      min-height: 180px;
+      min-height: 200px;
       padding: 32px 18px 18px 18px;
       border-radius: 2px;
       cursor: grab;
@@ -74,6 +74,14 @@
       z-index: 2;
     }
 
+    .note-date {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.65rem;
+      color: rgba(44,24,16,0.35);
+      margin-bottom: 6px;
+      pointer-events: none;
+    }
+
     .note-title {
       font-family: 'Caveat', cursive;
       font-size: 1.3rem;
@@ -84,7 +92,7 @@
       outline: none;
       color: #2c1810;
       line-height: 1.2;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     .note-content {
       font-family: 'Caveat', cursive;
@@ -92,7 +100,7 @@
       border: none;
       background: transparent;
       width: 100%;
-      min-height: 100px;
+      min-height: 90px;
       outline: none;
       color: #3d2a1a;
       resize: none;
@@ -144,9 +152,9 @@
       min-height: 100vh;
     }
 
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
 
     #canvas { position: relative; width: 4000px; height: 4000px; }
 
@@ -154,6 +162,40 @@
       backdrop-filter: blur(16px);
       background: rgba(253, 246, 236, 0.9);
       border-bottom: 1px solid rgba(196, 168, 130, 0.3);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: rgba(253, 246, 236, 0.97);
+      backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(196, 168, 130, 0.25);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+      z-index: 40;
+    }
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+      opacity: 0;
+      pointer-events: none;
+      position: absolute;
+    }
+    .sidebar-item {
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      border-left: 3px solid transparent;
+    }
+    .sidebar-item:hover {
+      background: rgba(196, 168, 130, 0.15);
+    }
+    .sidebar-item.active {
+      background: rgba(196, 168, 130, 0.2);
+      border-left-color: #c4a882;
+    }
+    .sidebar-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
 
     @keyframes noteAppear {
@@ -168,12 +210,48 @@
     }
     .fade-in { animation: fadeIn 0.5s ease-out; }
 
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .slide-in { animation: slideIn 0.25s ease-out; }
+
     .color-dot {
       width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
       border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s;
     }
     .color-dot:hover { transform: scale(1.2); }
     .color-dot.active { border-color: #2c1810; transform: scale(1.15); }
+
+    /* Color map for sidebar dots */
+    .sc-note-yellow { background: #fff9c4; }
+    .sc-note-pink { background: #f8bbd0; }
+    .sc-note-blue { background: #b3e5fc; }
+    .sc-note-green { background: #c8e6c9; }
+    .sc-note-orange { background: #ffe0b2; }
+    .sc-note-purple { background: #e1bee7; }
+
+    /* Mobile sidebar overlay */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 35;
+    }
+    .sidebar-overlay.show { display: block; }
+
+    @media (max-width: 640px) {
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 45;
+        width: 270px;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+      }
+    }
   </style>
 </head>
 <body class="overflow-hidden">
@@ -182,7 +260,7 @@
   <div id="loginPage" class="hidden login-bg flex items-center justify-center min-h-screen p-4">
     <div class="text-center fade-in max-w-md w-full">
       <div class="mb-8">
-        <span class="font-hand text-7xl text-ink block mb-2">📌 Catatan Saku</span>
+        <span class="font-hand text-7xl text-ink block mb-2">📌 Catatan Crysna</span>
         <p class="text-ink/60 font-body text-lg max-w-md mx-auto leading-relaxed">
           Simpan catatan di awan. Tulis, seret, atur sesuka hati.<br>
           Catatanmu aman &mdash; bisa diakses dari mana saja.
@@ -229,10 +307,15 @@
 
   <!-- MAIN APP -->
   <div id="appPage" class="hidden h-screen flex flex-col">
+    <!-- Top Bar -->
     <header class="toolbar px-4 py-3 flex items-center justify-between z-50 shadow-sm shrink-0">
       <div class="flex items-center gap-3">
-        <span class="font-hand text-2xl text-ink">📌 Catatan Saku</span>
-        <span id="noteCount" class="text-xs text-ink/40 font-body"></span>
+        <!-- Sidebar toggle -->
+        <button onclick="toggleSidebar()" class="text-ink/50 hover:text-ink/80 transition-colors" title="Toggle Sidebar">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10"/></svg>
+        </button>
+        <span class="font-hand text-2xl text-ink">📌 Catatan Crysna</span>
+        <span id="noteCount" class="text-xs text-ink/40 font-body hidden sm:inline"></span>
       </div>
       <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
         <div class="hidden sm:flex items-center gap-1.5 mr-2">
@@ -257,19 +340,55 @@
       </div>
     </header>
 
-    <div id="canvasWrapper" class="flex-1 overflow-auto cork-bg cursor-default relative">
-      <div id="canvas"></div>
-      <div id="emptyState" class="hidden absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div class="text-center">
-          <span class="text-6xl block mb-4">📝</span>
-          <p class="font-hand text-3xl text-ink/30">Belum ada catatan</p>
-          <p class="font-body text-sm text-ink/20 mt-2">Klik tombol "+" untuk mulai menulis</p>
+    <!-- Body: Sidebar + Canvas -->
+    <div class="flex flex-1 overflow-hidden relative">
+
+      <!-- Mobile overlay -->
+      <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+      <!-- Sidebar -->
+      <aside id="sidebar" class="sidebar flex flex-col shrink-0 h-full">
+        <!-- Sidebar header -->
+        <div class="px-4 py-3 border-b border-cork/15 flex items-center justify-between shrink-0">
+          <span class="font-body text-xs font-medium text-ink/50 uppercase tracking-wider">Daftar Catatan</span>
+          <span id="sidebarCount" class="text-[10px] text-ink/30 font-body bg-ink/5 px-2 py-0.5 rounded-full"></span>
+        </div>
+
+        <!-- Search -->
+        <div class="px-3 py-2 shrink-0">
+          <input id="searchInput" type="text" placeholder="Cari catatan..."
+            class="w-full px-3 py-2 rounded-lg bg-ink/5 border-0 text-xs font-body text-ink placeholder-ink/30 focus:outline-none focus:ring-1 focus:ring-cork/40"
+            oninput="renderSidebar()" />
+        </div>
+
+        <!-- Note list -->
+        <div id="sidebarList" class="flex-1 overflow-y-auto px-1 pb-3"></div>
+
+        <!-- Sidebar footer: add note -->
+        <div class="px-3 py-3 border-t border-cork/15 shrink-0">
+          <button onclick="addNote()"
+            class="w-full flex items-center justify-center gap-2 py-2.5 bg-ink text-cream rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors">
+            <span class="text-base leading-none">+</span> Catatan Baru
+          </button>
+        </div>
+      </aside>
+
+      <!-- Canvas -->
+      <div id="canvasWrapper" class="flex-1 overflow-auto cork-bg cursor-default relative">
+        <div id="canvas"></div>
+        <div id="emptyState" class="hidden absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="text-center">
+            <span class="text-6xl block mb-4">📝</span>
+            <p class="font-hand text-3xl text-ink/30">Belum ada catatan</p>
+            <p class="font-body text-sm text-ink/20 mt-2">Klik "Catatan Baru" untuk mulai menulis</p>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- Mobile FAB -->
     <button onclick="addNote()"
-      class="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-ink text-cream rounded-full shadow-xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform active:scale-95">
+      class="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-ink text-cream rounded-full shadow-xl flex items-center justify-center text-2xl z-30 hover:scale-110 transition-transform active:scale-95">
       +
     </button>
   </div>
@@ -283,10 +402,9 @@
   </div>
 
   <script>
-    // ===== SUPABASE CONFIG (hardcoded) =====
+    // ===== SUPABASE CONFIG =====
     const SUPABASE_URL = 'https://ejkjiwkzvmsqbkeuzold.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqa2ppd2t6dm1zcWJrZXV6b2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MTUxMjAsImV4cCI6MjA4NjM5MTEyMH0.6hxr8lqW5idrWfwfPhMWI2M9oUrr2NlZgJE9xOlM6Fc';
-
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ===== STATE =====
@@ -296,6 +414,121 @@
     let maxZ = 1;
     let dragState = null;
     let resizeState = null;
+    let sidebarOpen = window.innerWidth > 640;
+    let activeNoteId = null;
+
+    // ===== DATE HELPERS =====
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      const day = d.getDate();
+      const month = months[d.getMonth()];
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2,'0');
+      const mins = String(d.getMinutes()).padStart(2,'0');
+      return `${day} ${month} ${year}, ${hours}:${mins}`;
+    }
+
+    function relativeDate(dateStr) {
+      if (!dateStr) return '';
+      const now = new Date();
+      const d = new Date(dateStr);
+      const diff = now - d;
+      const mins = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      if (mins < 1) return 'Baru saja';
+      if (mins < 60) return `${mins} menit lalu`;
+      if (hours < 24) return `${hours} jam lalu`;
+      if (days < 7) return `${days} hari lalu`;
+      return formatDate(dateStr);
+    }
+
+    // ===== SIDEBAR =====
+    function toggleSidebar() {
+      sidebarOpen = !sidebarOpen;
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      if (sidebarOpen) {
+        sidebar.classList.remove('collapsed');
+        if (window.innerWidth <= 640) overlay.classList.add('show');
+      } else {
+        sidebar.classList.add('collapsed');
+        overlay.classList.remove('show');
+      }
+    }
+
+    function renderSidebar() {
+      const list = document.getElementById('sidebarList');
+      const query = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+
+      const filtered = notes
+        .filter(n => {
+          if (!query) return true;
+          return (n.title || '').toLowerCase().includes(query) || (n.content || '').toLowerCase().includes(query);
+        })
+        .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+
+      document.getElementById('sidebarCount').textContent = notes.length;
+
+      if (filtered.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-8 px-4">
+            <p class="text-ink/25 text-xs font-body">${query ? 'Tidak ditemukan' : 'Belum ada catatan'}</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(n => {
+        const colorMap = {
+          'note-yellow': '#fff9c4', 'note-pink': '#f8bbd0', 'note-blue': '#b3e5fc',
+          'note-green': '#c8e6c9', 'note-orange': '#ffe0b2', 'note-purple': '#e1bee7'
+        };
+        const preview = (n.content || '').substring(0, 60).replace(/\n/g, ' ');
+        const isActive = activeNoteId === n.id;
+        return `
+          <div class="sidebar-item ${isActive ? 'active' : ''} px-3 py-2.5 mx-1 rounded-lg my-0.5 flex gap-2.5 items-start slide-in"
+               onclick="focusNote('${n.id}')">
+            <div class="sidebar-color-dot mt-1.5" style="background:${colorMap[n.color]||'#fff9c4'};box-shadow:0 0 0 1px rgba(0,0,0,0.08)"></div>
+            <div class="flex-1 min-w-0">
+              <div class="font-body text-sm font-medium text-ink/80 truncate">${esc(n.title || 'Tanpa Judul')}</div>
+              <div class="font-body text-[11px] text-ink/35 truncate mt-0.5">${esc(preview) || 'Catatan kosong...'}</div>
+              <div class="font-body text-[10px] text-ink/25 mt-1">${relativeDate(n.updated_at || n.created_at)}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function focusNote(id) {
+      activeNoteId = id;
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
+
+      // Scroll canvas to note position
+      const wrapper = document.getElementById('canvasWrapper');
+      const targetX = note.pos_x - wrapper.clientWidth / 2 + 120;
+      const targetY = note.pos_y - wrapper.clientHeight / 2 + 90;
+      wrapper.scrollTo({ left: Math.max(0, targetX), top: Math.max(0, targetY), behavior: 'smooth' });
+
+      // Bring to front & highlight
+      bringFront(id);
+      const el = document.getElementById('note-' + id);
+      if (el) {
+        el.style.transition = 'transform 0.3s, box-shadow 0.3s';
+        el.style.transform = 'scale(1.05)';
+        el.style.boxShadow = '0 0 0 3px rgba(196,168,130,0.6), 4px 8px 24px rgba(0,0,0,0.25)';
+        setTimeout(() => {
+          el.style.transform = '';
+          el.style.boxShadow = '';
+        }, 600);
+      }
+
+      // Close sidebar on mobile
+      if (window.innerWidth <= 640 && sidebarOpen) toggleSidebar();
+
+      renderSidebar();
+    }
 
     // ===== AUTH =====
     async function loginWithGoogle() {
@@ -331,6 +564,7 @@
       await sb.auth.signOut();
       currentUser = null; notes = [];
       document.getElementById('canvas').innerHTML = '';
+      document.getElementById('sidebarList').innerHTML = '';
       showPage('login');
     }
 
@@ -346,7 +580,13 @@
     function showPage(p) {
       ['loginPage','appPage','loadingPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
       if (p === 'login') document.getElementById('loginPage').classList.remove('hidden');
-      else if (p === 'app') document.getElementById('appPage').classList.remove('hidden');
+      else if (p === 'app') {
+        document.getElementById('appPage').classList.remove('hidden');
+        // Set initial sidebar state
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebarOpen) sidebar.classList.add('collapsed');
+        else sidebar.classList.remove('collapsed');
+      }
       else if (p === 'loading') document.getElementById('loadingPage').classList.remove('hidden');
     }
 
@@ -372,22 +612,28 @@
       notes = data || [];
       maxZ = notes.reduce((m, n) => Math.max(m, n.z_index || 0), 0) + 1;
       renderAll();
+      renderSidebar();
     }
 
     async function addNote() {
       const w = document.getElementById('canvasWrapper');
       const x = w.scrollLeft + w.clientWidth / 2 - 120 + (Math.random() * 80 - 40);
       const y = w.scrollTop + w.clientHeight / 2 - 90 + (Math.random() * 80 - 40);
+      const now = new Date().toISOString();
       const n = {
         user_id: currentUser.id, title: 'Catatan Baru', content: '',
         color: selectedColor, pos_x: Math.max(20, x), pos_y: Math.max(20, y),
-        width: 240, height: 180, z_index: maxZ++
+        width: 240, height: 200, z_index: maxZ++,
+        created_at: now, updated_at: now
       };
       const { data, error } = await sb.from('notes').insert(n).select().single();
       if (error) { console.error('Add:', error); return; }
       notes.push(data);
       renderNote(data, true);
       updateCount();
+      renderSidebar();
+      activeNoteId = data.id;
+      renderSidebar();
     }
 
     async function deleteNote(id) {
@@ -397,17 +643,24 @@
       notes = notes.filter(n => n.id !== id);
       const el = document.getElementById('note-' + id);
       if (el) { el.style.cssText += 'transform:scale(0.5) rotate(10deg);opacity:0;transition:all .3s'; setTimeout(() => el.remove(), 300); }
+      if (activeNoteId === id) activeNoteId = null;
       updateCount();
+      renderSidebar();
     }
 
     function scheduleSave(note) {
       clearTimeout(note._t);
       note._t = setTimeout(async () => {
+        note.updated_at = new Date().toISOString();
         await sb.from('notes').update({
           title: note.title, content: note.content, color: note.color,
           pos_x: note.pos_x, pos_y: note.pos_y, width: note.width,
-          height: note.height, z_index: note.z_index, updated_at: new Date().toISOString()
+          height: note.height, z_index: note.z_index, updated_at: note.updated_at
         }).eq('id', note.id);
+        // Update date display on note
+        const dateEl = document.querySelector(`#note-${note.id} .note-date`);
+        if (dateEl) dateEl.textContent = formatDate(note.updated_at);
+        renderSidebar();
       }, 600);
     }
 
@@ -422,12 +675,13 @@
       const d = document.createElement('div');
       d.id = 'note-' + note.id;
       d.className = `sticky-note ${note.color}${animate ? ' note-appear' : ''}`;
-      d.style.cssText = `left:${note.pos_x}px;top:${note.pos_y}px;width:${note.width||240}px;min-height:${note.height||180}px;z-index:${note.z_index||1}`;
+      d.style.cssText = `left:${note.pos_x}px;top:${note.pos_y}px;width:${note.width||240}px;min-height:${note.height||200}px;z-index:${note.z_index||1}`;
 
       d.innerHTML = `
         <button class="delete-btn" onclick="deleteNote('${note.id}')" title="Hapus">&#10005;</button>
-        <input class="note-title" value="${esc(note.title)}" placeholder="Judul..." onfocus="bringFront('${note.id}')">
-        <textarea class="note-content" placeholder="Tulis catatan di sini..." onfocus="bringFront('${note.id}')">${esc(note.content)}</textarea>
+        <div class="note-date">${formatDate(note.updated_at || note.created_at)}</div>
+        <input class="note-title" value="${esc(note.title)}" placeholder="Judul..." onfocus="onNoteFocus('${note.id}')">
+        <textarea class="note-content" placeholder="Tulis catatan di sini..." onfocus="onNoteFocus('${note.id}')">${esc(note.content)}</textarea>
         <svg class="resize-handle" viewBox="0 0 16 16"><path d="M14 14L8 14M14 14L14 8M14 14L6 6" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/></svg>`;
 
       d.querySelector('.note-title').addEventListener('input', e => { note.title = e.target.value; scheduleSave(note); });
@@ -438,6 +692,12 @@
       h.addEventListener('mousedown', e => startResize(e, note, d));
       h.addEventListener('touchstart', e => startResize(e, note, d), { passive: false });
       document.getElementById('canvas').appendChild(d);
+    }
+
+    function onNoteFocus(id) {
+      activeNoteId = id;
+      bringFront(id);
+      renderSidebar();
     }
 
     function updateCount() {
@@ -464,6 +724,7 @@
       const p = gp(e);
       dragState = { note, el, sx: p.x, sy: p.y, ox: note.pos_x, oy: note.pos_y };
       el.classList.add('dragging'); bringFront(note.id);
+      activeNoteId = note.id;
       document.addEventListener('mousemove', onDrag); document.addEventListener('mouseup', endDrag);
       document.addEventListener('touchmove', onDrag, { passive: false }); document.addEventListener('touchend', endDrag);
     }
@@ -482,6 +743,7 @@
       dragState.el.classList.remove('dragging'); scheduleSave(dragState.note); dragState = null;
       document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', endDrag);
       document.removeEventListener('touchmove', onDrag); document.removeEventListener('touchend', endDrag);
+      renderSidebar();
     }
 
     // ===== RESIZE =====
@@ -521,13 +783,21 @@
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); if (currentUser) addNote(); }
     });
 
+    // Handle window resize for sidebar
+    window.addEventListener('resize', () => {
+      const overlay = document.getElementById('sidebarOverlay');
+      if (window.innerWidth > 640) {
+        overlay.classList.remove('show');
+      } else if (sidebarOpen) {
+        overlay.classList.add('show');
+      }
+    });
+
     // ===== INIT =====
     async function init() {
       showPage('loading');
-
       const { data: { session } } = await sb.auth.getSession();
       if (session) await onAuth(session); else showPage('login');
-
       sb.auth.onAuthStateChange(async (ev, session) => {
         if (ev === 'SIGNED_IN' && session && !currentUser) await onAuth(session);
       });
