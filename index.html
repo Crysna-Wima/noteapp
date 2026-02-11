@@ -22,13 +22,6 @@
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'DM Sans',sans-serif;overflow:hidden;height:100vh}
 
-    .cork-bg{
-      background-color:#c4a882;
-      background-image:
-        radial-gradient(ellipse at 20% 50%,rgba(0,0,0,.05) 0%,transparent 50%),
-        radial-gradient(ellipse at 80% 20%,rgba(255,255,255,.08) 0%,transparent 40%),
-        url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
-    }
     .login-bg{background:linear-gradient(135deg,#fdf6ec 0%,#f0e6d3 50%,#e8d5b8 100%);min-height:100vh}
 
     ::-webkit-scrollbar{width:6px;height:6px}
@@ -61,10 +54,12 @@
       cursor:default;
       transition:border-color .15s;
       background:transparent;
+      resize:both;
+      overflow:hidden;
     }
     .txt-el:hover{border-color:rgba(166,139,107,.3)}
-    .txt-el.selected{border-color:#a68b6b;box-shadow:0 0 0 1px rgba(166,139,107,.2)}
-    .txt-el.editing{border-color:#8b7355;background:rgba(255,255,255,.2)}
+    .txt-el.selected{border-color:#a68b6b;box-shadow:0 0 0 1px rgba(166,139,107,.2);resize:both;overflow:auto}
+    .txt-el.editing{border-color:#8b7355;background:rgba(255,255,255,.2);resize:both;overflow:auto}
     .txt-el.dragging{opacity:.8;cursor:grabbing}
     .txt-el .txt-content{
       outline:none;min-height:20px;line-height:1.6;
@@ -83,10 +78,11 @@
     .sel-handle.bl{bottom:-5px;left:-5px;cursor:nesw-resize}
     .sel-handle.br{bottom:-5px;right:-5px;cursor:nwse-resize}
 
-    /* Canvas */
+    /* Canvas - WHITE background */
+    #canvasWrapper{background:#ffffff !important}
     #noteCanvas{position:relative;width:4000px;height:4000px;cursor:text}
 
-    /* Color pickers - FIXED z-index */
+    /* Color pickers */
     .color-picker-dropdown{
       position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);
       background:white;border-radius:10px;padding:8px;
@@ -103,6 +99,7 @@
     .note-color-dot.active{border-color:#2c1810;transform:scale(1.1)}
     .nc-yellow{background:#fff9c4}.nc-pink{background:#f8bbd0}.nc-blue{background:#b3e5fc}
     .nc-green{background:#c8e6c9}.nc-orange{background:#ffe0b2}.nc-purple{background:#e1bee7}
+    .nc-white{background:#ffffff;border:1px solid #ddd}
 
     /* Canvas color tint overlay */
     .canvas-tint{position:absolute;inset:0;pointer-events:none;z-index:0}
@@ -116,8 +113,25 @@
       font-family:'DM Sans',sans-serif;
     }
 
+    /* Save indicator */
+    .save-indicator{
+      display:inline-flex;align-items:center;gap:4px;
+      font-size:11px;color:rgba(44,24,16,.35);
+      transition:all .3s;
+    }
+    .save-indicator.saving{color:#e67e22}
+    .save-indicator.saved{color:#27ae60}
+    .save-indicator svg{width:14px;height:14px}
+
+    /* Sidebar save icon */
+    .sidebar-save{opacity:0;transition:opacity .3s}
+    .sidebar-save.show{opacity:1}
+
     @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .5s ease-out}
     @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}.slide-in{animation:slideIn .2s ease-out}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    @keyframes checkPop{0%{transform:scale(0)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+    .check-pop{animation:checkPop .3s ease-out}
 
     .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:35}
     .sidebar-overlay.show{display:block}
@@ -193,23 +207,29 @@
         <div id="noteToolbar" class="hidden shrink-0" style="z-index:60">
           <div class="fmt-bar px-4 py-2 flex items-center gap-3 flex-wrap">
             <input id="noteTitleInput" type="text" placeholder="Judul catatan..." class="font-hand text-xl font-bold bg-transparent border-none outline-none text-ink flex-1 min-w-[120px]"/>
+            <!-- Save indicator -->
+            <div id="saveIndicator" class="save-indicator">
+              <svg id="saveIconIdle" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+              <span id="saveText">Tersimpan</span>
+            </div>
             <span id="noteDate" class="text-[11px] text-ink/30 font-body shrink-0"></span>
             <div class="flex items-center gap-1 shrink-0">
-              <div class="note-color-dot nc-yellow active" data-color="note-yellow" onclick="changeNoteColor(this)"></div>
-              <div class="note-color-dot nc-pink" data-color="note-pink" onclick="changeNoteColor(this)"></div>
-              <div class="note-color-dot nc-blue" data-color="note-blue" onclick="changeNoteColor(this)"></div>
-              <div class="note-color-dot nc-green" data-color="note-green" onclick="changeNoteColor(this)"></div>
-              <div class="note-color-dot nc-orange" data-color="note-orange" onclick="changeNoteColor(this)"></div>
-              <div class="note-color-dot nc-purple" data-color="note-purple" onclick="changeNoteColor(this)"></div>
+              <div class="note-color-dot nc-white" data-color="note-white" onclick="changeNoteColor(this)" title="Putih"></div>
+              <div class="note-color-dot nc-yellow active" data-color="note-yellow" onclick="changeNoteColor(this)" title="Kuning"></div>
+              <div class="note-color-dot nc-pink" data-color="note-pink" onclick="changeNoteColor(this)" title="Pink"></div>
+              <div class="note-color-dot nc-blue" data-color="note-blue" onclick="changeNoteColor(this)" title="Biru"></div>
+              <div class="note-color-dot nc-green" data-color="note-green" onclick="changeNoteColor(this)" title="Hijau"></div>
+              <div class="note-color-dot nc-orange" data-color="note-orange" onclick="changeNoteColor(this)" title="Oranye"></div>
+              <div class="note-color-dot nc-purple" data-color="note-purple" onclick="changeNoteColor(this)" title="Ungu"></div>
             </div>
             <button onclick="deleteCurrentNote()" class="text-ink/30 hover:text-red-500 transition-colors shrink-0" title="Hapus"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
           </div>
           <!-- Format toolbar -->
           <div class="fmt-bar px-4 py-1.5 flex items-center gap-1 flex-wrap" style="z-index:70">
-            <button class="fmt-btn" onclick="execFmt('bold')" title="Bold" id="btnBold"><b>B</b></button>
-            <button class="fmt-btn" onclick="execFmt('italic')" title="Italic" id="btnItalic"><i>I</i></button>
-            <button class="fmt-btn" onclick="execFmt('underline')" title="Underline" id="btnUnderline"><u>U</u></button>
-            <button class="fmt-btn" onclick="execFmt('strikeThrough')" title="Coret" id="btnStrike"><s>S</s></button>
+            <button class="fmt-btn" onmousedown="execFmtBtn(event,'bold')" title="Bold" id="btnBold"><b>B</b></button>
+            <button class="fmt-btn" onmousedown="execFmtBtn(event,'italic')" title="Italic" id="btnItalic"><i>I</i></button>
+            <button class="fmt-btn" onmousedown="execFmtBtn(event,'underline')" title="Underline" id="btnUnderline"><u>U</u></button>
+            <button class="fmt-btn" onmousedown="execFmtBtn(event,'strikeThrough')" title="Coret" id="btnStrike"><s>S</s></button>
             <div class="fmt-sep"></div>
             <select id="fontSizeSelect" onchange="changeFontSize(this.value)" class="fmt-btn text-xs bg-transparent border border-cork/20 rounded-md px-1 cursor-pointer" style="width:58px" title="Ukuran">
               <option value="1">10</option><option value="2">13</option><option value="3" selected>16</option>
@@ -218,49 +238,49 @@
             <div class="fmt-sep"></div>
             <!-- Text color -->
             <div style="position:relative;display:inline-block">
-              <button class="fmt-btn" onclick="togglePicker('textCP')" title="Warna Teks" id="btnTC">
+              <button class="fmt-btn" onmousedown="togglePickerBtn(event,'textCP')" title="Warna Teks" id="btnTC">
                 <span style="font-weight:700">A</span>
                 <span id="tcBar" style="position:absolute;bottom:3px;left:8px;right:8px;height:3px;background:#2c1810;border-radius:2px"></span>
               </button>
               <div id="textCP" class="color-picker-dropdown">
-                <div class="cp-swatch" style="background:#2c1810" onclick="setTC('#2c1810')"></div>
-                <div class="cp-swatch" style="background:#e74c3c" onclick="setTC('#e74c3c')"></div>
-                <div class="cp-swatch" style="background:#e67e22" onclick="setTC('#e67e22')"></div>
-                <div class="cp-swatch" style="background:#f1c40f" onclick="setTC('#f1c40f')"></div>
-                <div class="cp-swatch" style="background:#27ae60" onclick="setTC('#27ae60')"></div>
-                <div class="cp-swatch" style="background:#3498db" onclick="setTC('#3498db')"></div>
-                <div class="cp-swatch" style="background:#8e44ad" onclick="setTC('#8e44ad')"></div>
-                <div class="cp-swatch" style="background:#e91e8f" onclick="setTC('#e91e8f')"></div>
-                <div class="cp-swatch" style="background:#ffffff;border:1px solid #ccc" onclick="setTC('#ffffff')"></div>
-                <div class="cp-swatch" style="background:#95a5a6" onclick="setTC('#95a5a6')"></div>
+                <div class="cp-swatch" style="background:#2c1810" onmousedown="setTCBtn(event,'#2c1810')"></div>
+                <div class="cp-swatch" style="background:#e74c3c" onmousedown="setTCBtn(event,'#e74c3c')"></div>
+                <div class="cp-swatch" style="background:#e67e22" onmousedown="setTCBtn(event,'#e67e22')"></div>
+                <div class="cp-swatch" style="background:#f1c40f" onmousedown="setTCBtn(event,'#f1c40f')"></div>
+                <div class="cp-swatch" style="background:#27ae60" onmousedown="setTCBtn(event,'#27ae60')"></div>
+                <div class="cp-swatch" style="background:#3498db" onmousedown="setTCBtn(event,'#3498db')"></div>
+                <div class="cp-swatch" style="background:#8e44ad" onmousedown="setTCBtn(event,'#8e44ad')"></div>
+                <div class="cp-swatch" style="background:#e91e8f" onmousedown="setTCBtn(event,'#e91e8f')"></div>
+                <div class="cp-swatch" style="background:#ffffff;border:1px solid #ccc" onmousedown="setTCBtn(event,'#ffffff')"></div>
+                <div class="cp-swatch" style="background:#95a5a6" onmousedown="setTCBtn(event,'#95a5a6')"></div>
               </div>
             </div>
             <!-- Highlight -->
             <div style="position:relative;display:inline-block">
-              <button class="fmt-btn" onclick="togglePicker('hlCP')" title="Highlight">
+              <button class="fmt-btn" onmousedown="togglePickerBtn(event,'hlCP')" title="Highlight">
                 <span style="background:#fff176;padding:0 3px;border-radius:2px;font-weight:700;font-size:12px">H</span>
               </button>
               <div id="hlCP" class="color-picker-dropdown">
-                <div class="cp-swatch" style="background:transparent;border:1px dashed #ccc" onclick="setHL(false)"></div>
-                <div class="cp-swatch" style="background:#fff176" onclick="setHL('#fff176')"></div>
-                <div class="cp-swatch" style="background:#aed581" onclick="setHL('#aed581')"></div>
-                <div class="cp-swatch" style="background:#4fc3f7" onclick="setHL('#4fc3f7')"></div>
-                <div class="cp-swatch" style="background:#f48fb1" onclick="setHL('#f48fb1')"></div>
-                <div class="cp-swatch" style="background:#ffab91" onclick="setHL('#ffab91')"></div>
-                <div class="cp-swatch" style="background:#ce93d8" onclick="setHL('#ce93d8')"></div>
+                <div class="cp-swatch" style="background:transparent;border:1px dashed #ccc" onmousedown="setHLBtn(event,false)"></div>
+                <div class="cp-swatch" style="background:#fff176" onmousedown="setHLBtn(event,'#fff176')"></div>
+                <div class="cp-swatch" style="background:#aed581" onmousedown="setHLBtn(event,'#aed581')"></div>
+                <div class="cp-swatch" style="background:#4fc3f7" onmousedown="setHLBtn(event,'#4fc3f7')"></div>
+                <div class="cp-swatch" style="background:#f48fb1" onmousedown="setHLBtn(event,'#f48fb1')"></div>
+                <div class="cp-swatch" style="background:#ffab91" onmousedown="setHLBtn(event,'#ffab91')"></div>
+                <div class="cp-swatch" style="background:#ce93d8" onmousedown="setHLBtn(event,'#ce93d8')"></div>
               </div>
             </div>
             <div class="fmt-sep"></div>
-            <button class="fmt-btn" onclick="execFmt('justifyLeft')" title="Rata Kiri"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M3 12h12M3 18h16"/></svg></button>
-            <button class="fmt-btn" onclick="execFmt('justifyCenter')" title="Rata Tengah"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M6 12h12M4 18h16"/></svg></button>
-            <button class="fmt-btn" onclick="execFmt('justifyRight')" title="Rata Kanan"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M9 12h12M5 18h16"/></svg></button>
+            <button class="fmt-btn" onmousedown="execFmtBtn(event,'justifyLeft')" title="Rata Kiri"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M3 12h12M3 18h16"/></svg></button>
+            <button class="fmt-btn" onmousedown="execFmtBtn(event,'justifyCenter')" title="Rata Tengah"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M6 12h12M4 18h16"/></svg></button>
+            <button class="fmt-btn" onmousedown="execFmtBtn(event,'justifyRight')" title="Rata Kanan"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M9 12h12M5 18h16"/></svg></button>
             <div class="fmt-sep"></div>
             <span class="text-[10px] text-ink/30 font-body ml-1" id="modeTip">Klik di canvas untuk menulis</span>
           </div>
         </div>
 
-        <!-- Canvas -->
-        <div id="canvasWrapper" class="flex-1 overflow-auto cork-bg relative" style="z-index:1">
+        <!-- Canvas - WHITE background -->
+        <div id="canvasWrapper" class="flex-1 overflow-auto relative" style="z-index:1;background:#ffffff">
           <div id="noteCanvas" onmousedown="onCanvasClick(event)"></div>
           <div id="welcomeState" class="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div class="text-center"><span class="text-6xl block mb-4">📝</span><p class="font-hand text-3xl text-ink/30">Pilih atau buat catatan</p><p class="font-body text-sm text-ink/20 mt-2">Pilih catatan dari sidebar atau klik "Catatan Baru"</p></div>
@@ -287,15 +307,47 @@
     // ===== STATE =====
     let currentUser=null, notes=[], activeNoteId=null, selectedElId=null, editingElId=null;
     let dragState=null, sidebarOpen=innerWidth>640;
+    let savedSelection=null; // Store selection for format buttons
 
-    const tintMap={'note-yellow':'rgba(255,249,196,.15)','note-pink':'rgba(248,187,208,.15)','note-blue':'rgba(179,229,252,.15)','note-green':'rgba(200,230,201,.15)','note-orange':'rgba(255,224,178,.15)','note-purple':'rgba(225,190,231,.15)'};
-    const colorMap={'note-yellow':'#fff9c4','note-pink':'#f8bbd0','note-blue':'#b3e5fc','note-green':'#c8e6c9','note-orange':'#ffe0b2','note-purple':'#e1bee7'};
+    const tintMap={
+      'note-white':'transparent',
+      'note-yellow':'rgba(255,249,196,.15)',
+      'note-pink':'rgba(248,187,208,.15)',
+      'note-blue':'rgba(179,229,252,.15)',
+      'note-green':'rgba(200,230,201,.15)',
+      'note-orange':'rgba(255,224,178,.15)',
+      'note-purple':'rgba(225,190,231,.15)'
+    };
+    const colorMap={
+      'note-white':'#ffffff',
+      'note-yellow':'#fff9c4',
+      'note-pink':'#f8bbd0',
+      'note-blue':'#b3e5fc',
+      'note-green':'#c8e6c9',
+      'note-orange':'#ffe0b2',
+      'note-purple':'#e1bee7'
+    };
 
     function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
     function uid(){return'b'+Date.now().toString(36)+Math.random().toString(36).substr(2,5)}
     function formatDate(d){if(!d)return'';const o=new Date(d),M=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];return`${o.getDate()} ${M[o.getMonth()]} ${o.getFullYear()}, ${String(o.getHours()).padStart(2,'0')}:${String(o.getMinutes()).padStart(2,'0')}`}
     function relDate(d){if(!d)return'';const diff=Date.now()-new Date(d),m=Math.floor(diff/6e4),h=Math.floor(diff/36e5),dy=Math.floor(diff/864e5);if(m<1)return'Baru saja';if(m<60)return m+' mnt lalu';if(h<24)return h+' jam lalu';if(dy<7)return dy+' hari lalu';return formatDate(d)}
     function showPill(t){const p=document.getElementById('modePill');p.textContent=t;p.style.opacity='1';clearTimeout(p._t);p._t=setTimeout(()=>p.style.opacity='0',1500)}
+
+    // ===== SELECTION SAVE/RESTORE =====
+    function saveSelection(){
+      const sel=window.getSelection();
+      if(sel.rangeCount>0){
+        savedSelection=sel.getRangeAt(0).cloneRange();
+      }
+    }
+    function restoreSelection(){
+      if(savedSelection){
+        const sel=window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(savedSelection);
+      }
+    }
 
     // ===== PAGES =====
     function showPage(p){['loginPage','appPage','loadingPage'].forEach(id=>document.getElementById(id).classList.add('hidden'));document.getElementById(p+'Page')?.classList.remove('hidden');if(p==='app'){const s=document.getElementById('sidebar');sidebarOpen?s.classList.remove('collapsed'):s.classList.add('collapsed')}}
@@ -312,6 +364,9 @@
     // ===== SIDEBAR =====
     function toggleSidebar(){sidebarOpen=!sidebarOpen;document.getElementById('sidebar').classList.toggle('collapsed',!sidebarOpen);const ov=document.getElementById('sidebarOverlay');(sidebarOpen&&innerWidth<=640)?ov.classList.add('show'):ov.classList.remove('show')}
 
+    // Track saving states per note
+    let savingNotes = new Set();
+
     function renderSidebar(){
       const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
       const filtered=notes.filter(n=>{if(!q)return true;const blocks=parseBlocks(n.content);const txt=blocks.map(b=>(b.html||'').replace(/<[^>]*>/g,'')).join(' ').toLowerCase();return(n.title||'').toLowerCase().includes(q)||txt.includes(q)}).sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
@@ -320,9 +375,18 @@
       if(!filtered.length){list.innerHTML=`<div class="text-center py-8"><p class="text-ink/25 text-xs font-body">${q?'Tidak ditemukan':'Belum ada catatan'}</p></div>`;return}
       list.innerHTML=filtered.map(n=>{
         const blocks=parseBlocks(n.content);const preview=blocks.map(b=>(b.html||'').replace(/<[^>]*>/g,'')).join(' ').substring(0,50);
+        const isSaving = savingNotes.has(n.id);
+        const dotColor = colorMap[n.color]||'#fff9c4';
+        const dotBorder = n.color === 'note-white' ? 'box-shadow:0 0 0 1px rgba(0,0,0,.15)' : 'box-shadow:0 0 0 1px rgba(0,0,0,.08)';
         return`<div class="sidebar-item ${activeNoteId===n.id?'active':''} px-3 py-2.5 mx-1 rounded-lg my-0.5 flex gap-2.5 items-start slide-in" onclick="openNote('${n.id}')">
-          <div class="sidebar-color-dot mt-1.5" style="background:${colorMap[n.color]||'#fff9c4'};box-shadow:0 0 0 1px rgba(0,0,0,.08)"></div>
-          <div class="flex-1 min-w-0"><div class="font-body text-sm font-medium text-ink/80 truncate">${esc(n.title||'Tanpa Judul')}</div>
+          <div class="sidebar-color-dot mt-1.5" style="background:${dotColor};${dotBorder}"></div>
+          <div class="flex-1 min-w-0"><div class="flex items-center gap-1.5"><div class="font-body text-sm font-medium text-ink/80 truncate flex-1">${esc(n.title||'Tanpa Judul')}</div>
+          <div class="sidebar-save ${isSaving?'show':''}" id="sidebar-save-${n.id}" title="${isSaving?'Menyimpan...':'Tersimpan'}">
+            ${isSaving ?
+              '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#e67e22" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10" style="animation:spin 1s linear infinite;transform-origin:center"/></svg>' :
+              '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>'
+            }
+          </div></div>
           <div class="font-body text-[11px] text-ink/35 truncate mt-0.5">${esc(preview)||'Catatan kosong...'}</div>
           <div class="font-body text-[10px] text-ink/25 mt-1">${relDate(n.updated_at||n.created_at)}</div></div></div>`;
       }).join('');
@@ -351,12 +415,37 @@
       notes=notes.filter(n=>n.id!==activeNoteId);activeNoteId=null;showWelcome();renderSidebar();
     }
 
+    function showSaveStatus(status){
+      const ind = document.getElementById('saveIndicator');
+      const txt = document.getElementById('saveText');
+      if(!ind) return;
+      ind.className = 'save-indicator ' + status;
+      if(status==='saving'){
+        txt.textContent = 'Menyimpan...';
+      } else {
+        txt.textContent = 'Tersimpan ✓';
+        setTimeout(()=>{
+          ind.className = 'save-indicator';
+          txt.textContent = 'Tersimpan';
+        }, 2000);
+      }
+    }
+
     function scheduleNoteSave(){
       const note=notes.find(n=>n.id===activeNoteId);if(!note)return;
+      // Show saving state
+      showSaveStatus('saving');
+      savingNotes.add(note.id);
+      renderSidebar();
+
       clearTimeout(note._t);note._t=setTimeout(async()=>{
         note.updated_at=new Date().toISOString();
         await sb.from('notes').update({title:note.title,content:note.content,color:note.color,updated_at:note.updated_at}).eq('id',note.id);
-        document.getElementById('noteDate').textContent=formatDate(note.updated_at);renderSidebar();
+        document.getElementById('noteDate').textContent=formatDate(note.updated_at);
+        // Show saved state
+        savingNotes.delete(note.id);
+        showSaveStatus('saved');
+        renderSidebar();
       },700);
     }
 
@@ -384,9 +473,8 @@
 
     function applyCanvasTint(color){
       const w=document.getElementById('canvasWrapper');
-      // Remove old tint
       w.querySelectorAll('.canvas-tint').forEach(e=>e.remove());
-      if(color&&tintMap[color]){
+      if(color&&tintMap[color]&&tintMap[color]!=='transparent'){
         const t=document.createElement('div');t.className='canvas-tint';
         t.style.background=tintMap[color];
         w.prepend(t);
@@ -409,6 +497,7 @@
       div.className='txt-el';
       div.style.left=b.x+'px';div.style.top=b.y+'px';
       if(b.w)div.style.width=b.w+'px';
+      if(b.h)div.style.height=b.h+'px';
 
       div.innerHTML=`
         <div class="sel-handle tl"></div><div class="sel-handle tr"></div>
@@ -417,13 +506,41 @@
 
       const content=div.querySelector('.txt-content');
 
+      // Handle resize via ResizeObserver
+      const resizeObs = new ResizeObserver(entries => {
+        for(const entry of entries){
+          const w = Math.round(entry.contentRect.width + 12); // padding
+          const h = Math.round(entry.contentRect.height + 12);
+          if(w > 10 && h > 10){
+            const blocks=getBlocks().map(bl=>bl.id===b.id?{...bl,w,h}:bl);
+            // Debounce resize save
+            clearTimeout(div._resizeT);
+            div._resizeT = setTimeout(()=>saveBlocks(blocks), 500);
+          }
+        }
+      });
+      resizeObs.observe(div);
+
+      // Handle resize via corner handles
+      div.querySelectorAll('.sel-handle').forEach(handle => {
+        handle.addEventListener('mousedown', e => {
+          e.stopPropagation();
+          e.preventDefault();
+          startResize(e, b, div, handle);
+        });
+        handle.addEventListener('touchstart', e => {
+          e.stopPropagation();
+          e.preventDefault();
+          startResize(e, b, div, handle);
+        }, {passive:false});
+      });
+
       // Single click = select
       div.addEventListener('mousedown',e=>{
         if(e.target.closest('.sel-handle'))return;
         e.stopPropagation();
-        if(editingElId===b.id)return; // already editing, let cursor work
+        if(editingElId===b.id)return;
         selectEl(b.id);
-        // Start drag if selected (not editing)
         if(editingElId!==b.id)startDrag(e,b,div);
       });
 
@@ -433,7 +550,7 @@
         startEditing(b.id);
       });
 
-      // Touch: tap=select, hold=drag, double tap=edit
+      // Touch
       let lastTap=0;
       div.addEventListener('touchstart',e=>{
         if(e.target.closest('.sel-handle'))return;
@@ -460,6 +577,86 @@
       document.getElementById('noteCanvas').appendChild(div);
     }
 
+    // ===== RESIZE via handles =====
+    let resizeState = null;
+
+    function startResize(e, block, el, handle){
+      e.preventDefault();
+      const p = gp(e);
+      const rect = el.getBoundingClientRect();
+      const isLeft = handle.classList.contains('tl') || handle.classList.contains('bl');
+      const isTop = handle.classList.contains('tl') || handle.classList.contains('tr');
+
+      resizeState = {
+        block, el,
+        sx: p.x, sy: p.y,
+        origW: rect.width, origH: rect.height,
+        origX: block.x, origY: block.y,
+        isLeft, isTop
+      };
+
+      document.addEventListener('mousemove', onResize);
+      document.addEventListener('mouseup', endResize);
+      document.addEventListener('touchmove', onResize, {passive:false});
+      document.addEventListener('touchend', endResize);
+    }
+
+    function onResize(e){
+      if(!resizeState) return;
+      e.preventDefault();
+      const p = gp(e);
+      const dx = p.x - resizeState.sx;
+      const dy = p.y - resizeState.sy;
+
+      let newW = resizeState.origW;
+      let newH = resizeState.origH;
+      let newX = resizeState.origX;
+      let newY = resizeState.origY;
+
+      if(resizeState.isLeft){
+        newW = Math.max(60, resizeState.origW - dx);
+        newX = resizeState.origX + (resizeState.origW - newW);
+      } else {
+        newW = Math.max(60, resizeState.origW + dx);
+      }
+
+      if(resizeState.isTop){
+        newH = Math.max(30, resizeState.origH - dy);
+        newY = resizeState.origY + (resizeState.origH - newH);
+      } else {
+        newH = Math.max(30, resizeState.origH + dy);
+      }
+
+      resizeState.el.style.width = newW + 'px';
+      resizeState.el.style.height = newH + 'px';
+      resizeState.el.style.left = newX + 'px';
+      resizeState.el.style.top = newY + 'px';
+
+      resizeState._newW = newW;
+      resizeState._newH = newH;
+      resizeState._newX = newX;
+      resizeState._newY = newY;
+    }
+
+    function endResize(){
+      if(!resizeState) return;
+      if(resizeState._newW){
+        const blocks = getBlocks().map(bl => bl.id === resizeState.block.id ? {
+          ...bl,
+          w: Math.round(resizeState._newW),
+          h: Math.round(resizeState._newH),
+          x: Math.round(resizeState._newX),
+          y: Math.round(resizeState._newY)
+        } : bl);
+        saveBlocks(blocks);
+      }
+      resizeState = null;
+      document.removeEventListener('mousemove', onResize);
+      document.removeEventListener('mouseup', endResize);
+      document.removeEventListener('touchmove', onResize);
+      document.removeEventListener('touchend', endResize);
+    }
+
     function selectEl(id){
       if(editingElId&&editingElId!==id)stopEditing();
       selectedElId=id;
@@ -481,7 +678,6 @@
       const content=el.querySelector('.txt-content');
       content.contentEditable='true';
       content.focus();
-      // Place cursor at end
       const sel=window.getSelection();sel.selectAllChildren(content);sel.collapseToEnd();
     }
 
@@ -492,11 +688,9 @@
         el.classList.remove('editing');
         el.querySelector('.txt-content').contentEditable='false';
       }
-      // Remove empty blocks
       const blocks=getBlocks();
       const block=blocks.find(b=>b.id===editingElId);
       if(block&&!block.html?.replace(/<[^>]*>/g,'').trim()){
-        // Block is empty after editing, remove it
         const filtered=blocks.filter(b=>b.id!==editingElId);
         saveBlocks(filtered);
         el?.remove();
@@ -507,24 +701,16 @@
 
     // ===== CLICK ON CANVAS = CREATE TEXT =====
     function onCanvasClick(e){
-      if(e.target.closest('.txt-el'))return; // clicked on a block
+      if(e.target.closest('.txt-el'))return;
       if(!activeNoteId)return;
-
-      // Deselect
       deselectAll();closeAllPickers();
-
-      // Create new text element at click position
       const canvas=document.getElementById('noteCanvas');
       const rect=canvas.getBoundingClientRect();
-      const wrapper=document.getElementById('canvasWrapper');
       const x=e.clientX-rect.left;
       const y=e.clientY-rect.top;
-
       const b={id:uid(),html:'',x:Math.max(10,x),y:Math.max(10,y),w:300};
       const blocks=getBlocks();blocks.push(b);saveBlocks(blocks);
       createBlockEl(b);
-
-      // Immediately start editing
       setTimeout(()=>startEditing(b.id),30);
     }
 
@@ -565,12 +751,78 @@
       document.removeEventListener('touchmove',onDrag);document.removeEventListener('touchend',endDrag);
     }
 
-    // ===== FORMATTING =====
-    function execFmt(cmd,val){document.execCommand(cmd,false,val||null);updateFmtBtns()}
-    function changeFontSize(val){document.execCommand('fontSize',false,val)}
-    function setTC(c){document.execCommand('foreColor',false,c);document.getElementById('tcBar').style.background=c;closeAllPickers()}
-    function setHL(c){if(!c)document.execCommand('removeFormat');else document.execCommand('hiliteColor',false,c);closeAllPickers()}
-    function togglePicker(id){const el=document.getElementById(id);const was=el.classList.contains('show');closeAllPickers();if(!was)el.classList.add('show')}
+    // ===== FORMATTING - FIXED: preserve selection =====
+    // Use mousedown + preventDefault to NOT lose focus/selection from contenteditable
+    function execFmtBtn(e, cmd, val){
+      e.preventDefault(); // Don't steal focus!
+      document.execCommand(cmd, false, val || null);
+      updateFmtBtns();
+      // Save content after format change
+      if(editingElId){
+        const el = document.getElementById('el-'+editingElId);
+        if(el){
+          const content = el.querySelector('.txt-content');
+          const blocks = getBlocks().map(bl => bl.id === editingElId ? {...bl, html: content.innerHTML} : bl);
+          saveBlocks(blocks);
+        }
+      }
+    }
+
+    function changeFontSize(val){
+      document.execCommand('fontSize', false, val);
+      if(editingElId){
+        const el = document.getElementById('el-'+editingElId);
+        if(el){
+          const content = el.querySelector('.txt-content');
+          const blocks = getBlocks().map(bl => bl.id === editingElId ? {...bl, html: content.innerHTML} : bl);
+          saveBlocks(blocks);
+        }
+      }
+    }
+
+    function togglePickerBtn(e, id){
+      e.preventDefault();
+      const el=document.getElementById(id);
+      const was=el.classList.contains('show');
+      closeAllPickers();
+      if(!was)el.classList.add('show');
+    }
+
+    function setTCBtn(e, c){
+      e.preventDefault();
+      document.execCommand('foreColor', false, c);
+      document.getElementById('tcBar').style.background=c;
+      closeAllPickers();
+      // Save
+      if(editingElId){
+        const el = document.getElementById('el-'+editingElId);
+        if(el){
+          const content = el.querySelector('.txt-content');
+          const blocks = getBlocks().map(bl => bl.id === editingElId ? {...bl, html: content.innerHTML} : bl);
+          saveBlocks(blocks);
+        }
+      }
+    }
+
+    function setHLBtn(e, c){
+      e.preventDefault();
+      if(!c){
+        document.execCommand('removeFormat');
+      } else {
+        document.execCommand('hiliteColor', false, c);
+      }
+      closeAllPickers();
+      // Save
+      if(editingElId){
+        const el = document.getElementById('el-'+editingElId);
+        if(el){
+          const content = el.querySelector('.txt-content');
+          const blocks = getBlocks().map(bl => bl.id === editingElId ? {...bl, html: content.innerHTML} : bl);
+          saveBlocks(blocks);
+        }
+      }
+    }
+
     function closeAllPickers(){document.querySelectorAll('.color-picker-dropdown').forEach(e=>e.classList.remove('show'))}
     function updateFmtBtns(){
       document.getElementById('btnBold')?.classList.toggle('active',document.queryCommandState('bold'));
@@ -591,19 +843,16 @@
     // ===== KEYBOARD =====
     document.addEventListener('keydown',e=>{
       if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();if(currentUser)addNote()}
-      // Delete selected element
       if((e.key==='Delete'||e.key==='Backspace')&&selectedElId&&!editingElId){
         e.preventDefault();
         const blocks=getBlocks().filter(b=>b.id!==selectedElId);
         document.getElementById('el-'+selectedElId)?.remove();
         selectedElId=null;saveBlocks(blocks);
       }
-      // Escape = deselect or stop editing
       if(e.key==='Escape'){
         if(editingElId)stopEditing();
         else deselectAll();
       }
-      // Enter on selected (not editing) = start editing
       if(e.key==='Enter'&&selectedElId&&!editingElId){
         e.preventDefault();startEditing(selectedElId);
       }
