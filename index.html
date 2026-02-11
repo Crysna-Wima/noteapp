@@ -12,385 +12,332 @@
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: {
-            hand: ['Caveat', 'cursive'],
-            body: ['DM Sans', 'sans-serif'],
-          },
-          colors: {
-            cork: '#c4a882',
-            'cork-dark': '#a68b6b',
-            cream: '#fdf6ec',
-            ink: '#2c1810',
-          }
+          fontFamily: { hand: ['Caveat','cursive'], body: ['DM Sans','sans-serif'] },
+          colors: { cork:'#c4a882','cork-dark':'#a68b6b', cream:'#fdf6ec', ink:'#2c1810' }
         }
       }
     }
   </script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'DM Sans', sans-serif; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'DM Sans',sans-serif;overflow:hidden;height:100vh}
 
-    .cork-bg {
-      background-color: #c4a882;
+    /* Cork canvas background */
+    .cork-bg{
+      background-color:#c4a882;
       background-image:
-        radial-gradient(ellipse at 20% 50%, rgba(0,0,0,0.05) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 40%),
+        radial-gradient(ellipse at 20% 50%,rgba(0,0,0,.05) 0%,transparent 50%),
+        radial-gradient(ellipse at 80% 20%,rgba(255,255,255,.08) 0%,transparent 40%),
         url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
     }
 
-    .sticky-note {
-      position: absolute;
-      width: 240px;
-      min-height: 200px;
-      padding: 32px 18px 18px 18px;
-      border-radius: 2px;
-      cursor: grab;
-      transition: box-shadow 0.2s, transform 0.1s;
-      user-select: none;
-      box-shadow: 2px 4px 12px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .sticky-note:hover {
-      box-shadow: 4px 8px 24px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .sticky-note.dragging {
-      cursor: grabbing;
-      box-shadow: 8px 16px 40px rgba(0,0,0,0.3);
-      transform: rotate(2deg) scale(1.04);
-      z-index: 10000 !important;
-      opacity: 0.92;
-    }
+    .login-bg{background:linear-gradient(135deg,#fdf6ec 0%,#f0e6d3 50%,#e8d5b8 100%);min-height:100vh}
 
-    .sticky-note::before {
-      content: '';
-      position: absolute;
-      top: 6px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 14px;
-      height: 14px;
-      background: radial-gradient(circle at 40% 35%, #ff6b6b, #c0392b);
-      border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3);
-      z-index: 2;
-    }
-
-    .note-date {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.65rem;
-      color: rgba(44,24,16,0.35);
-      margin-bottom: 6px;
-      pointer-events: none;
-    }
-
-    .note-title {
-      font-family: 'Caveat', cursive;
-      font-size: 1.3rem;
-      font-weight: 700;
-      border: none;
-      background: transparent;
-      width: 100%;
-      outline: none;
-      color: #2c1810;
-      line-height: 1.2;
-      margin-bottom: 4px;
-    }
-    .note-content {
-      font-family: 'Caveat', cursive;
-      font-size: 1.1rem;
-      border: none;
-      background: transparent;
-      width: 100%;
-      min-height: 90px;
-      outline: none;
-      color: #3d2a1a;
-      resize: none;
-      line-height: 1.5;
-    }
-
-    .note-yellow { background: #fff9c4; }
-    .note-pink { background: #f8bbd0; }
-    .note-blue { background: #b3e5fc; }
-    .note-green { background: #c8e6c9; }
-    .note-orange { background: #ffe0b2; }
-    .note-purple { background: #e1bee7; }
-
-    .delete-btn {
-      position: absolute;
-      top: 6px;
-      right: 8px;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(0,0,0,0.12);
-      color: rgba(0,0,0,0.5);
-      font-size: 13px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.2s, background 0.2s;
-      z-index: 3;
-    }
-    .sticky-note:hover .delete-btn { opacity: 1; }
-    .delete-btn:hover { background: #e74c3c; color: white; }
-
-    .resize-handle {
-      position: absolute;
-      bottom: 2px;
-      right: 2px;
-      width: 16px;
-      height: 16px;
-      cursor: nwse-resize;
-      opacity: 0.3;
-    }
-    .sticky-note:hover .resize-handle { opacity: 0.6; }
-
-    .login-bg {
-      background: linear-gradient(135deg, #fdf6ec 0%, #f0e6d3 50%, #e8d5b8 100%);
-      min-height: 100vh;
-    }
-
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
-
-    #canvas { position: relative; width: 4000px; height: 4000px; }
-
-    .toolbar {
-      backdrop-filter: blur(16px);
-      background: rgba(253, 246, 236, 0.9);
-      border-bottom: 1px solid rgba(196, 168, 130, 0.3);
-    }
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px}
 
     /* Sidebar */
-    .sidebar {
-      width: 280px;
-      background: rgba(253, 246, 236, 0.97);
-      backdrop-filter: blur(12px);
-      border-right: 1px solid rgba(196, 168, 130, 0.25);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
-      z-index: 40;
+    .sidebar{
+      width:280px;background:rgba(253,246,236,.97);backdrop-filter:blur(12px);
+      border-right:1px solid rgba(196,168,130,.25);
+      transition:width .3s cubic-bezier(.4,0,.2,1),min-width .3s;
+      overflow:hidden;
     }
-    .sidebar.collapsed {
-      transform: translateX(-100%);
-      opacity: 0;
-      pointer-events: none;
-      position: absolute;
+    .sidebar.collapsed{width:0;min-width:0;border-right:none}
+    .sidebar-item{cursor:pointer;transition:background .15s;border-left:3px solid transparent}
+    .sidebar-item:hover{background:rgba(196,168,130,.15)}
+    .sidebar-item.active{background:rgba(196,168,130,.22);border-left-color:#a68b6b}
+    .sidebar-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+    /* Toolbar */
+    .top-bar{backdrop-filter:blur(16px);background:rgba(253,246,236,.92);border-bottom:1px solid rgba(196,168,130,.3)}
+    .fmt-bar{backdrop-filter:blur(12px);background:rgba(253,246,236,.88);border-bottom:1px solid rgba(196,168,130,.2)}
+    .fmt-btn{
+      width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+      border-radius:6px;cursor:pointer;border:none;background:transparent;
+      color:rgba(44,24,16,.55);font-size:13px;transition:all .15s;
     }
-    .sidebar-item {
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-      border-left: 3px solid transparent;
+    .fmt-btn:hover{background:rgba(196,168,130,.25);color:#2c1810}
+    .fmt-btn.active{background:rgba(196,168,130,.35);color:#2c1810;font-weight:700}
+    .fmt-sep{width:1px;height:20px;background:rgba(196,168,130,.25);margin:0 4px}
+
+    /* Text block on canvas */
+    .text-block{
+      position:absolute;
+      min-width:120px;min-height:40px;
+      padding:10px 14px;
+      border:2px dashed transparent;
+      border-radius:6px;
+      cursor:grab;
+      transition:border-color .2s,box-shadow .2s;
+      background:rgba(255,255,255,.45);
+      backdrop-filter:blur(4px);
     }
-    .sidebar-item:hover {
-      background: rgba(196, 168, 130, 0.15);
+    .text-block:hover,.text-block.selected{
+      border-color:rgba(196,168,130,.5);
+      box-shadow:0 2px 12px rgba(0,0,0,.08);
     }
-    .sidebar-item.active {
-      background: rgba(196, 168, 130, 0.2);
-      border-left-color: #c4a882;
+    .text-block.selected{border-color:#a68b6b;box-shadow:0 2px 16px rgba(0,0,0,.12)}
+    .text-block.dragging{cursor:grabbing;opacity:.85;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+    .text-block-content{
+      outline:none;min-height:24px;line-height:1.6;
+      font-family:'DM Sans',sans-serif;font-size:16px;color:#2c1810;
+      word-break:break-word;
     }
-    .sidebar-color-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
+    .text-block-content:empty::before{
+      content:'Ketik di sini...';color:rgba(44,24,16,.25);pointer-events:none;
     }
 
-    @keyframes noteAppear {
-      from { opacity: 0; transform: scale(0.7) rotate(-5deg); }
-      to { opacity: 1; transform: scale(1) rotate(0deg); }
+    /* Delete handle on block */
+    .block-delete{
+      position:absolute;top:-10px;right:-10px;
+      width:22px;height:22px;border-radius:50%;
+      background:#e74c3c;color:white;border:2px solid white;
+      font-size:11px;cursor:pointer;display:none;
+      align-items:center;justify-content:center;z-index:5;
     }
-    .note-appear { animation: noteAppear 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .text-block.selected .block-delete{display:flex}
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
+    /* Drag handle */
+    .block-drag{
+      position:absolute;top:-10px;left:-10px;
+      width:22px;height:22px;border-radius:50%;
+      background:#a68b6b;color:white;border:2px solid white;
+      font-size:10px;cursor:grab;display:none;
+      align-items:center;justify-content:center;z-index:5;
     }
-    .fade-in { animation: fadeIn 0.5s ease-out; }
+    .text-block.selected .block-drag{display:flex}
 
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateX(-12px); }
-      to { opacity: 1; transform: translateX(0); }
+    /* Canvas area */
+    #noteCanvas{position:relative;width:3000px;height:3000px}
+
+    /* Color picker dropdown */
+    .color-picker-dropdown{
+      position:absolute;top:100%;left:50%;transform:translateX(-50%);
+      background:white;border-radius:10px;padding:8px;
+      box-shadow:0 4px 20px rgba(0,0,0,.15);display:none;z-index:100;
+      gap:4px;flex-wrap:wrap;width:140px;
     }
-    .slide-in { animation: slideIn 0.25s ease-out; }
-
-    .color-dot {
-      width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
-      border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s;
+    .color-picker-dropdown.show{display:flex}
+    .cp-swatch{
+      width:24px;height:24px;border-radius:50%;cursor:pointer;
+      border:2px solid transparent;transition:transform .1s,border-color .15s;
     }
-    .color-dot:hover { transform: scale(1.2); }
-    .color-dot.active { border-color: #2c1810; transform: scale(1.15); }
+    .cp-swatch:hover{transform:scale(1.2);border-color:#2c1810}
 
-    /* Color map for sidebar dots */
-    .sc-note-yellow { background: #fff9c4; }
-    .sc-note-pink { background: #f8bbd0; }
-    .sc-note-blue { background: #b3e5fc; }
-    .sc-note-green { background: #c8e6c9; }
-    .sc-note-orange { background: #ffe0b2; }
-    .sc-note-purple { background: #e1bee7; }
+    /* Note color dots */
+    .note-color-dot{
+      width:22px;height:22px;border-radius:50%;cursor:pointer;
+      border:2px solid transparent;transition:transform .15s,border-color .15s;
+    }
+    .note-color-dot:hover{transform:scale(1.15)}
+    .note-color-dot.active{border-color:#2c1810;transform:scale(1.1)}
+
+    .nc-yellow{background:#fff9c4} .nc-pink{background:#f8bbd0} .nc-blue{background:#b3e5fc}
+    .nc-green{background:#c8e6c9} .nc-orange{background:#ffe0b2} .nc-purple{background:#e1bee7}
+
+    /* Animations */
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    .fade-in{animation:fadeIn .5s ease-out}
+    @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+    .slide-in{animation:slideIn .2s ease-out}
+    @keyframes blockAppear{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+    .block-appear{animation:blockAppear .25s cubic-bezier(.34,1.56,.64,1)}
 
     /* Mobile sidebar overlay */
-    .sidebar-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.3);
-      z-index: 35;
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:35}
+    .sidebar-overlay.show{display:block}
+    @media(max-width:640px){
+      .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:45;width:270px;box-shadow:4px 0 24px rgba(0,0,0,.15)}
+      .sidebar.collapsed{width:0}
     }
-    .sidebar-overlay.show { display: block; }
 
-    @media (max-width: 640px) {
-      .sidebar {
-        position: fixed;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        z-index: 45;
-        width: 270px;
-        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
-      }
+    /* Empty note state */
+    .empty-canvas{
+      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+      text-align:center;pointer-events:none;
     }
   </style>
 </head>
-<body class="overflow-hidden">
+<body>
 
-  <!-- LOGIN PAGE -->
+  <!-- LOGIN -->
   <div id="loginPage" class="hidden login-bg flex items-center justify-center min-h-screen p-4">
     <div class="text-center fade-in max-w-md w-full">
       <div class="mb-8">
         <span class="font-hand text-7xl text-ink block mb-2">📌 Catatan Crysna</span>
-        <p class="text-ink/60 font-body text-lg max-w-md mx-auto leading-relaxed">
+        <p class="text-ink/60 font-body text-lg leading-relaxed">
           Simpan catatan di awan. Tulis, seret, atur sesuka hati.<br>
           Catatanmu aman &mdash; bisa diakses dari mana saja.
         </p>
       </div>
-
       <button onclick="loginWithGoogle()"
         class="inline-flex items-center gap-3 px-8 py-4 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 border border-cork/20 group">
-        <svg class="w-6 h-6" viewBox="0 0 24 24">
-          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-        </svg>
-        <span class="font-body font-medium text-ink text-base group-hover:text-ink/80">Masuk dengan Google</span>
+        <svg class="w-6 h-6" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        <span class="font-body font-medium text-ink">Masuk dengan Google</span>
       </button>
-
       <div class="mt-6 flex items-center gap-4 max-w-xs mx-auto">
-        <div class="h-px bg-ink/10 flex-1"></div>
-        <span class="text-ink/30 text-xs font-body">atau</span>
-        <div class="h-px bg-ink/10 flex-1"></div>
+        <div class="h-px bg-ink/10 flex-1"></div><span class="text-ink/30 text-xs">atau</span><div class="h-px bg-ink/10 flex-1"></div>
       </div>
-
-      <button onclick="toggleEmailForm()"
-        class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-ink/5 rounded-xl hover:bg-ink/10 transition-colors border border-ink/10">
-        <span class="text-lg">✉️</span>
-        <span class="font-body text-sm text-ink/70">Masuk dengan Email</span>
+      <button onclick="toggleEmailForm()" class="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-ink/5 rounded-xl hover:bg-ink/10 transition-colors border border-ink/10">
+        <span>✉️</span><span class="font-body text-sm text-ink/70">Masuk dengan Email</span>
       </button>
-
       <div id="emailForm" class="hidden mt-6 max-w-sm mx-auto text-left fade-in">
-        <input id="emailInput" type="email" placeholder="email@contoh.com"
-          class="w-full px-4 py-3 rounded-xl border border-cork/30 bg-white text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-cork mb-3" />
-        <input id="passwordInput" type="password" placeholder="Password (min 6 karakter)"
-          class="w-full px-4 py-3 rounded-xl border border-cork/30 bg-white text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-cork mb-3" />
+        <input id="emailInput" type="email" placeholder="email@contoh.com" class="w-full px-4 py-3 rounded-xl border border-cork/30 bg-white text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-cork mb-3"/>
+        <input id="passwordInput" type="password" placeholder="Password (min 6 karakter)" class="w-full px-4 py-3 rounded-xl border border-cork/30 bg-white text-ink font-body text-sm focus:outline-none focus:ring-2 focus:ring-cork mb-3"/>
         <div class="flex gap-2">
           <button onclick="signUpEmail()" class="flex-1 py-3 rounded-xl bg-cork text-white font-medium text-sm hover:bg-cork-dark transition-colors">Daftar Baru</button>
           <button onclick="signInEmail()" class="flex-1 py-3 rounded-xl bg-ink text-cream font-medium text-sm hover:bg-ink/90 transition-colors">Masuk</button>
         </div>
       </div>
-
       <p id="authError" class="mt-4 text-red-500 text-sm font-body hidden"></p>
     </div>
   </div>
 
   <!-- MAIN APP -->
   <div id="appPage" class="hidden h-screen flex flex-col">
-    <!-- Top Bar -->
-    <header class="toolbar px-4 py-3 flex items-center justify-between z-50 shadow-sm shrink-0">
+    <!-- Top bar -->
+    <header class="top-bar px-4 py-2.5 flex items-center justify-between z-50 shrink-0">
       <div class="flex items-center gap-3">
-        <!-- Sidebar toggle -->
-        <button onclick="toggleSidebar()" class="text-ink/50 hover:text-ink/80 transition-colors" title="Toggle Sidebar">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10"/></svg>
-        </button>
+        <button onclick="toggleSidebar()" class="text-ink/50 hover:text-ink/80 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10"/></svg></button>
         <span class="font-hand text-2xl text-ink">📌 Catatan Crysna</span>
-        <span id="noteCount" class="text-xs text-ink/40 font-body hidden sm:inline"></span>
       </div>
-      <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
-        <div class="hidden sm:flex items-center gap-1.5 mr-2">
-          <div class="color-dot note-yellow active" data-color="note-yellow" onclick="selectColor(this)"></div>
-          <div class="color-dot note-pink" data-color="note-pink" onclick="selectColor(this)"></div>
-          <div class="color-dot note-blue" data-color="note-blue" onclick="selectColor(this)"></div>
-          <div class="color-dot note-green" data-color="note-green" onclick="selectColor(this)"></div>
-          <div class="color-dot note-orange" data-color="note-orange" onclick="selectColor(this)"></div>
-          <div class="color-dot note-purple" data-color="note-purple" onclick="selectColor(this)"></div>
-        </div>
-        <button onclick="addNote()" 
-          class="hidden sm:flex items-center gap-2 px-4 py-2 bg-ink text-cream rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors shadow-md hover:shadow-lg">
-          <span class="text-lg leading-none">+</span> Catatan Baru
-        </button>
-        <div class="flex items-center gap-2 ml-1 sm:ml-2 pl-2 border-l border-ink/10">
-          <img id="userAvatar" src="" alt="" class="w-8 h-8 rounded-full object-cover border-2 border-cork/30 hidden" />
-          <span id="userName" class="text-sm text-ink/60 font-body hidden sm:block max-w-[120px] truncate"></span>
-          <button onclick="logout()" class="text-ink/40 hover:text-ink/70 transition-colors" title="Keluar">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-          </button>
-        </div>
+      <div class="flex items-center gap-2">
+        <img id="userAvatar" src="" alt="" class="w-7 h-7 rounded-full object-cover border-2 border-cork/30 hidden"/>
+        <span id="userName" class="text-sm text-ink/60 font-body hidden sm:block max-w-[120px] truncate"></span>
+        <button onclick="logout()" class="text-ink/40 hover:text-ink/70 transition-colors ml-1" title="Keluar"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg></button>
       </div>
     </header>
 
-    <!-- Body: Sidebar + Canvas -->
     <div class="flex flex-1 overflow-hidden relative">
-
       <!-- Mobile overlay -->
       <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
       <!-- Sidebar -->
       <aside id="sidebar" class="sidebar flex flex-col shrink-0 h-full">
-        <!-- Sidebar header -->
         <div class="px-4 py-3 border-b border-cork/15 flex items-center justify-between shrink-0">
-          <span class="font-body text-xs font-medium text-ink/50 uppercase tracking-wider">Daftar Catatan</span>
+          <span class="font-body text-xs font-medium text-ink/50 uppercase tracking-wider">Catatan</span>
           <span id="sidebarCount" class="text-[10px] text-ink/30 font-body bg-ink/5 px-2 py-0.5 rounded-full"></span>
         </div>
-
-        <!-- Search -->
         <div class="px-3 py-2 shrink-0">
-          <input id="searchInput" type="text" placeholder="Cari catatan..."
-            class="w-full px-3 py-2 rounded-lg bg-ink/5 border-0 text-xs font-body text-ink placeholder-ink/30 focus:outline-none focus:ring-1 focus:ring-cork/40"
-            oninput="renderSidebar()" />
+          <input id="searchInput" type="text" placeholder="Cari catatan..." class="w-full px-3 py-2 rounded-lg bg-ink/5 border-0 text-xs font-body text-ink placeholder-ink/30 focus:outline-none focus:ring-1 focus:ring-cork/40" oninput="renderSidebar()"/>
         </div>
-
-        <!-- Note list -->
-        <div id="sidebarList" class="flex-1 overflow-y-auto px-1 pb-3"></div>
-
-        <!-- Sidebar footer: add note -->
+        <div id="sidebarList" class="flex-1 overflow-y-auto px-1 pb-2"></div>
         <div class="px-3 py-3 border-t border-cork/15 shrink-0">
-          <button onclick="addNote()"
-            class="w-full flex items-center justify-center gap-2 py-2.5 bg-ink text-cream rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors">
+          <button onclick="addNote()" class="w-full flex items-center justify-center gap-2 py-2.5 bg-ink text-cream rounded-xl text-sm font-medium hover:bg-ink/90 transition-colors">
             <span class="text-base leading-none">+</span> Catatan Baru
           </button>
         </div>
       </aside>
 
-      <!-- Canvas -->
-      <div id="canvasWrapper" class="flex-1 overflow-auto cork-bg cursor-default relative">
-        <div id="canvas"></div>
-        <div id="emptyState" class="hidden absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div class="text-center">
-            <span class="text-6xl block mb-4">📝</span>
-            <p class="font-hand text-3xl text-ink/30">Belum ada catatan</p>
-            <p class="font-body text-sm text-ink/20 mt-2">Klik "Catatan Baru" untuk mulai menulis</p>
+      <!-- Main content area -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Note header + format toolbar (only when a note is selected) -->
+        <div id="noteToolbar" class="hidden shrink-0">
+          <!-- Note info bar -->
+          <div class="fmt-bar px-4 py-2 flex items-center gap-3 flex-wrap">
+            <input id="noteTitleInput" type="text" placeholder="Judul catatan..." class="font-hand text-xl font-bold bg-transparent border-none outline-none text-ink flex-1 min-w-[150px]"/>
+            <span id="noteDate" class="text-[11px] text-ink/30 font-body shrink-0"></span>
+            <!-- Note color -->
+            <div class="flex items-center gap-1 shrink-0">
+              <div class="note-color-dot nc-yellow active" data-color="note-yellow" onclick="changeNoteColor(this)"></div>
+              <div class="note-color-dot nc-pink" data-color="note-pink" onclick="changeNoteColor(this)"></div>
+              <div class="note-color-dot nc-blue" data-color="note-blue" onclick="changeNoteColor(this)"></div>
+              <div class="note-color-dot nc-green" data-color="note-green" onclick="changeNoteColor(this)"></div>
+              <div class="note-color-dot nc-orange" data-color="note-orange" onclick="changeNoteColor(this)"></div>
+              <div class="note-color-dot nc-purple" data-color="note-purple" onclick="changeNoteColor(this)"></div>
+            </div>
+            <button onclick="deleteCurrentNote()" class="text-ink/30 hover:text-red-500 transition-colors shrink-0" title="Hapus Catatan">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+          <!-- Format toolbar -->
+          <div class="fmt-bar px-4 py-1.5 flex items-center gap-1 flex-wrap">
+            <button class="fmt-btn" onclick="addTextBlock()" title="Tambah Teks">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            </button>
+            <div class="fmt-sep"></div>
+            <button class="fmt-btn" onclick="execFmt('bold')" title="Bold (Ctrl+B)" id="btnBold"><b>B</b></button>
+            <button class="fmt-btn" onclick="execFmt('italic')" title="Italic (Ctrl+I)" id="btnItalic"><i>I</i></button>
+            <button class="fmt-btn" onclick="execFmt('underline')" title="Underline (Ctrl+U)" id="btnUnderline"><u>U</u></button>
+            <button class="fmt-btn" onclick="execFmt('strikeThrough')" title="Strikethrough" id="btnStrike"><s>S</s></button>
+            <div class="fmt-sep"></div>
+            <!-- Font size -->
+            <select id="fontSizeSelect" onchange="changeFontSize(this.value)" class="fmt-btn text-xs bg-transparent border border-cork/20 rounded-md px-1 w-auto cursor-pointer" style="width:60px" title="Ukuran Font">
+              <option value="1">10</option>
+              <option value="2">13</option>
+              <option value="3" selected>16</option>
+              <option value="4">18</option>
+              <option value="5">24</option>
+              <option value="6">32</option>
+              <option value="7">48</option>
+            </select>
+            <div class="fmt-sep"></div>
+            <!-- Text color -->
+            <div class="relative">
+              <button class="fmt-btn" onclick="toggleColorPicker('textColorPicker')" title="Warna Teks" id="btnTextColor">
+                <span style="font-weight:700">A</span>
+                <span id="textColorIndicator" style="position:absolute;bottom:3px;left:8px;right:8px;height:3px;background:#2c1810;border-radius:2px"></span>
+              </button>
+              <div id="textColorPicker" class="color-picker-dropdown">
+                <div class="cp-swatch" style="background:#2c1810" onclick="applyTextColor('#2c1810')"></div>
+                <div class="cp-swatch" style="background:#e74c3c" onclick="applyTextColor('#e74c3c')"></div>
+                <div class="cp-swatch" style="background:#e67e22" onclick="applyTextColor('#e67e22')"></div>
+                <div class="cp-swatch" style="background:#f1c40f" onclick="applyTextColor('#f1c40f')"></div>
+                <div class="cp-swatch" style="background:#27ae60" onclick="applyTextColor('#27ae60')"></div>
+                <div class="cp-swatch" style="background:#3498db" onclick="applyTextColor('#3498db')"></div>
+                <div class="cp-swatch" style="background:#8e44ad" onclick="applyTextColor('#8e44ad')"></div>
+                <div class="cp-swatch" style="background:#e91e8f" onclick="applyTextColor('#e91e8f')"></div>
+                <div class="cp-swatch" style="background:#1abc9c" onclick="applyTextColor('#1abc9c')"></div>
+                <div class="cp-swatch" style="background:#95a5a6" onclick="applyTextColor('#95a5a6')"></div>
+              </div>
+            </div>
+            <!-- Highlight color -->
+            <div class="relative">
+              <button class="fmt-btn" onclick="toggleColorPicker('hilightPicker')" title="Warna Highlight">
+                <span style="background:#fff176;padding:0 3px;border-radius:2px;font-weight:700;font-size:12px">H</span>
+              </button>
+              <div id="hilightPicker" class="color-picker-dropdown">
+                <div class="cp-swatch" style="background:transparent;border:1px dashed #ccc" onclick="applyHighlight('transparent')"></div>
+                <div class="cp-swatch" style="background:#fff176" onclick="applyHighlight('#fff176')"></div>
+                <div class="cp-swatch" style="background:#aed581" onclick="applyHighlight('#aed581')"></div>
+                <div class="cp-swatch" style="background:#4fc3f7" onclick="applyHighlight('#4fc3f7')"></div>
+                <div class="cp-swatch" style="background:#f48fb1" onclick="applyHighlight('#f48fb1')"></div>
+                <div class="cp-swatch" style="background:#ffab91" onclick="applyHighlight('#ffab91')"></div>
+                <div class="cp-swatch" style="background:#ce93d8" onclick="applyHighlight('#ce93d8')"></div>
+              </div>
+            </div>
+            <div class="fmt-sep"></div>
+            <button class="fmt-btn" onclick="execFmt('justifyLeft')" title="Rata Kiri">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M3 12h12M3 18h16"/></svg>
+            </button>
+            <button class="fmt-btn" onclick="execFmt('justifyCenter')" title="Rata Tengah">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M6 12h12M4 18h16"/></svg>
+            </button>
+            <button class="fmt-btn" onclick="execFmt('justifyRight')" title="Rata Kanan">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 6h18M9 12h12M5 18h16"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas / welcome -->
+        <div id="canvasWrapper" class="flex-1 overflow-auto cork-bg relative">
+          <div id="noteCanvas"></div>
+          <!-- Welcome state (no note selected) -->
+          <div id="welcomeState" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="text-center">
+              <span class="text-6xl block mb-4">📝</span>
+              <p class="font-hand text-3xl text-ink/30">Pilih atau buat catatan</p>
+              <p class="font-body text-sm text-ink/20 mt-2">Pilih catatan dari sidebar atau klik "Catatan Baru"</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Mobile FAB -->
-    <button onclick="addNote()"
-      class="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-ink text-cream rounded-full shadow-xl flex items-center justify-center text-2xl z-30 hover:scale-110 transition-transform active:scale-95">
-      +
-    </button>
+    <button onclick="addTextBlock()" id="fabAdd" class="hidden sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-ink text-cream rounded-full shadow-xl flex items-center justify-center text-2xl z-30 active:scale-95 transition-transform">+</button>
   </div>
 
   <!-- LOADING -->
@@ -402,407 +349,388 @@
   </div>
 
   <script>
-    // ===== SUPABASE CONFIG =====
-    const SUPABASE_URL = 'https://ejkjiwkzvmsqbkeuzold.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqa2ppd2t6dm1zcWJrZXV6b2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MTUxMjAsImV4cCI6MjA4NjM5MTEyMH0.6hxr8lqW5idrWfwfPhMWI2M9oUrr2NlZgJE9xOlM6Fc';
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ===== CONFIG =====
+    const SUPABASE_URL='https://ejkjiwkzvmsqbkeuzold.supabase.co';
+    const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqa2ppd2t6dm1zcWJrZXV6b2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MTUxMjAsImV4cCI6MjA4NjM5MTEyMH0.6hxr8lqW5idrWfwfPhMWI2M9oUrr2NlZgJE9xOlM6Fc';
+    const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
     // ===== STATE =====
-    let currentUser = null;
-    let notes = [];
-    let selectedColor = 'note-yellow';
-    let maxZ = 1;
-    let dragState = null;
-    let resizeState = null;
-    let sidebarOpen = window.innerWidth > 640;
-    let activeNoteId = null;
+    let currentUser=null;
+    let notes=[];
+    let activeNoteId=null;
+    let selectedBlockId=null;
+    let dragState=null;
+    let sidebarOpen=window.innerWidth>640;
 
-    // ===== DATE HELPERS =====
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
-      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-      const day = d.getDate();
-      const month = months[d.getMonth()];
-      const year = d.getFullYear();
-      const hours = String(d.getHours()).padStart(2,'0');
-      const mins = String(d.getMinutes()).padStart(2,'0');
-      return `${day} ${month} ${year}, ${hours}:${mins}`;
+    // Color map for canvas bg tint
+    const canvasBg={
+      'note-yellow':'rgba(255,249,196,.18)','note-pink':'rgba(248,187,208,.18)',
+      'note-blue':'rgba(179,229,252,.18)','note-green':'rgba(200,230,201,.18)',
+      'note-orange':'rgba(255,224,178,.18)','note-purple':'rgba(225,190,231,.18)'
+    };
+
+    // ===== HELPERS =====
+    function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+    function uid(){return 'b'+Date.now().toString(36)+Math.random().toString(36).substr(2,5)}
+
+    function formatDate(d){
+      if(!d)return'';const o=new Date(d);
+      const M=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      return`${o.getDate()} ${M[o.getMonth()]} ${o.getFullYear()}, ${String(o.getHours()).padStart(2,'0')}:${String(o.getMinutes()).padStart(2,'0')}`;
     }
-
-    function relativeDate(dateStr) {
-      if (!dateStr) return '';
-      const now = new Date();
-      const d = new Date(dateStr);
-      const diff = now - d;
-      const mins = Math.floor(diff / 60000);
-      const hours = Math.floor(diff / 3600000);
-      const days = Math.floor(diff / 86400000);
-      if (mins < 1) return 'Baru saja';
-      if (mins < 60) return `${mins} menit lalu`;
-      if (hours < 24) return `${hours} jam lalu`;
-      if (days < 7) return `${days} hari lalu`;
-      return formatDate(dateStr);
-    }
-
-    // ===== SIDEBAR =====
-    function toggleSidebar() {
-      sidebarOpen = !sidebarOpen;
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      if (sidebarOpen) {
-        sidebar.classList.remove('collapsed');
-        if (window.innerWidth <= 640) overlay.classList.add('show');
-      } else {
-        sidebar.classList.add('collapsed');
-        overlay.classList.remove('show');
-      }
-    }
-
-    function renderSidebar() {
-      const list = document.getElementById('sidebarList');
-      const query = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
-
-      const filtered = notes
-        .filter(n => {
-          if (!query) return true;
-          return (n.title || '').toLowerCase().includes(query) || (n.content || '').toLowerCase().includes(query);
-        })
-        .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
-
-      document.getElementById('sidebarCount').textContent = notes.length;
-
-      if (filtered.length === 0) {
-        list.innerHTML = `
-          <div class="text-center py-8 px-4">
-            <p class="text-ink/25 text-xs font-body">${query ? 'Tidak ditemukan' : 'Belum ada catatan'}</p>
-          </div>`;
-        return;
-      }
-
-      list.innerHTML = filtered.map(n => {
-        const colorMap = {
-          'note-yellow': '#fff9c4', 'note-pink': '#f8bbd0', 'note-blue': '#b3e5fc',
-          'note-green': '#c8e6c9', 'note-orange': '#ffe0b2', 'note-purple': '#e1bee7'
-        };
-        const preview = (n.content || '').substring(0, 60).replace(/\n/g, ' ');
-        const isActive = activeNoteId === n.id;
-        return `
-          <div class="sidebar-item ${isActive ? 'active' : ''} px-3 py-2.5 mx-1 rounded-lg my-0.5 flex gap-2.5 items-start slide-in"
-               onclick="focusNote('${n.id}')">
-            <div class="sidebar-color-dot mt-1.5" style="background:${colorMap[n.color]||'#fff9c4'};box-shadow:0 0 0 1px rgba(0,0,0,0.08)"></div>
-            <div class="flex-1 min-w-0">
-              <div class="font-body text-sm font-medium text-ink/80 truncate">${esc(n.title || 'Tanpa Judul')}</div>
-              <div class="font-body text-[11px] text-ink/35 truncate mt-0.5">${esc(preview) || 'Catatan kosong...'}</div>
-              <div class="font-body text-[10px] text-ink/25 mt-1">${relativeDate(n.updated_at || n.created_at)}</div>
-            </div>
-          </div>`;
-      }).join('');
-    }
-
-    function focusNote(id) {
-      activeNoteId = id;
-      const note = notes.find(n => n.id === id);
-      if (!note) return;
-
-      // Scroll canvas to note position
-      const wrapper = document.getElementById('canvasWrapper');
-      const targetX = note.pos_x - wrapper.clientWidth / 2 + 120;
-      const targetY = note.pos_y - wrapper.clientHeight / 2 + 90;
-      wrapper.scrollTo({ left: Math.max(0, targetX), top: Math.max(0, targetY), behavior: 'smooth' });
-
-      // Bring to front & highlight
-      bringFront(id);
-      const el = document.getElementById('note-' + id);
-      if (el) {
-        el.style.transition = 'transform 0.3s, box-shadow 0.3s';
-        el.style.transform = 'scale(1.05)';
-        el.style.boxShadow = '0 0 0 3px rgba(196,168,130,0.6), 4px 8px 24px rgba(0,0,0,0.25)';
-        setTimeout(() => {
-          el.style.transform = '';
-          el.style.boxShadow = '';
-        }, 600);
-      }
-
-      // Close sidebar on mobile
-      if (window.innerWidth <= 640 && sidebarOpen) toggleSidebar();
-
-      renderSidebar();
-    }
-
-    // ===== AUTH =====
-    async function loginWithGoogle() {
-      const { error } = await sb.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin + window.location.pathname }
-      });
-      if (error) showAuthError(error.message);
-    }
-
-    function toggleEmailForm() { document.getElementById('emailForm').classList.toggle('hidden'); }
-
-    async function signUpEmail() {
-      const email = document.getElementById('emailInput').value.trim();
-      const pw = document.getElementById('passwordInput').value;
-      if (!email || !pw) return showAuthError('Isi email dan password!');
-      if (pw.length < 6) return showAuthError('Password minimal 6 karakter!');
-      const { error } = await sb.auth.signUp({ email, password: pw });
-      if (error) return showAuthError(error.message);
-      showAuthError('Cek email untuk konfirmasi! 📬', false);
-    }
-
-    async function signInEmail() {
-      const email = document.getElementById('emailInput').value.trim();
-      const pw = document.getElementById('passwordInput').value;
-      if (!email || !pw) return showAuthError('Isi email dan password!');
-      const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
-      if (error) return showAuthError(error.message);
-      onAuth(data.session);
-    }
-
-    async function logout() {
-      await sb.auth.signOut();
-      currentUser = null; notes = [];
-      document.getElementById('canvas').innerHTML = '';
-      document.getElementById('sidebarList').innerHTML = '';
-      showPage('login');
-    }
-
-    function showAuthError(msg, isError = true) {
-      const el = document.getElementById('authError');
-      el.textContent = msg;
-      el.className = `mt-4 text-sm font-body ${isError ? 'text-red-500' : 'text-green-600'}`;
-      el.classList.remove('hidden');
-      setTimeout(() => el.classList.add('hidden'), 5000);
+    function relDate(d){
+      if(!d)return'';const diff=Date.now()-new Date(d);const m=Math.floor(diff/6e4),h=Math.floor(diff/36e5),dy=Math.floor(diff/864e5);
+      if(m<1)return'Baru saja';if(m<60)return m+' menit lalu';if(h<24)return h+' jam lalu';if(dy<7)return dy+' hari lalu';return formatDate(d);
     }
 
     // ===== PAGES =====
-    function showPage(p) {
-      ['loginPage','appPage','loadingPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
-      if (p === 'login') document.getElementById('loginPage').classList.remove('hidden');
-      else if (p === 'app') {
-        document.getElementById('appPage').classList.remove('hidden');
-        // Set initial sidebar state
-        const sidebar = document.getElementById('sidebar');
-        if (!sidebarOpen) sidebar.classList.add('collapsed');
-        else sidebar.classList.remove('collapsed');
+    function showPage(p){
+      ['loginPage','appPage','loadingPage'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+      document.getElementById(p+'Page')?.classList.remove('hidden');
+      if(p==='app'){
+        const s=document.getElementById('sidebar');
+        sidebarOpen?s.classList.remove('collapsed'):s.classList.add('collapsed');
       }
-      else if (p === 'loading') document.getElementById('loadingPage').classList.remove('hidden');
     }
 
-    async function onAuth(session) {
-      if (!session) return showPage('login');
-      currentUser = session.user;
-      const meta = currentUser.user_metadata || {};
-      document.getElementById('userName').textContent = meta.full_name || meta.name || currentUser.email?.split('@')[0] || 'User';
+    // ===== AUTH =====
+    async function loginWithGoogle(){
+      const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+      if(error)showAuthError(error.message);
+    }
+    function toggleEmailForm(){document.getElementById('emailForm').classList.toggle('hidden')}
+    async function signUpEmail(){
+      const e=document.getElementById('emailInput').value.trim(),p=document.getElementById('passwordInput').value;
+      if(!e||!p)return showAuthError('Isi email dan password!');
+      if(p.length<6)return showAuthError('Password minimal 6 karakter!');
+      const{error}=await sb.auth.signUp({email:e,password:p});
+      if(error)return showAuthError(error.message);showAuthError('Cek email untuk konfirmasi! 📬',false);
+    }
+    async function signInEmail(){
+      const e=document.getElementById('emailInput').value.trim(),p=document.getElementById('passwordInput').value;
+      if(!e||!p)return showAuthError('Isi email dan password!');
+      const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});
+      if(error)return showAuthError(error.message);onAuth(data.session);
+    }
+    async function logout(){await sb.auth.signOut();currentUser=null;notes=[];activeNoteId=null;showPage('login')}
+    function showAuthError(msg,isErr=true){
+      const el=document.getElementById('authError');el.textContent=msg;
+      el.className=`mt-4 text-sm font-body ${isErr?'text-red-500':'text-green-600'}`;
+      el.classList.remove('hidden');setTimeout(()=>el.classList.add('hidden'),5000);
+    }
+    async function onAuth(session){
+      if(!session)return showPage('login');currentUser=session.user;
+      const m=currentUser.user_metadata||{};
+      document.getElementById('userName').textContent=m.full_name||m.name||currentUser.email?.split('@')[0]||'User';
       document.getElementById('userName').classList.remove('hidden');
-      if (meta.avatar_url || meta.picture) {
-        document.getElementById('userAvatar').src = meta.avatar_url || meta.picture;
-        document.getElementById('userAvatar').classList.remove('hidden');
+      if(m.avatar_url||m.picture){document.getElementById('userAvatar').src=m.avatar_url||m.picture;document.getElementById('userAvatar').classList.remove('hidden')}
+      showPage('app');await loadNotes();
+    }
+
+    // ===== SIDEBAR =====
+    function toggleSidebar(){
+      sidebarOpen=!sidebarOpen;
+      document.getElementById('sidebar').classList.toggle('collapsed',!sidebarOpen);
+      const ov=document.getElementById('sidebarOverlay');
+      (sidebarOpen&&innerWidth<=640)?ov.classList.add('show'):ov.classList.remove('show');
+    }
+
+    function renderSidebar(){
+      const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
+      const filtered=notes.filter(n=>{
+        if(!q)return true;
+        const blocks=parseBlocks(n.content);
+        const txt=blocks.map(b=>b.text||'').join(' ').toLowerCase();
+        return(n.title||'').toLowerCase().includes(q)||txt.includes(q);
+      }).sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
+
+      document.getElementById('sidebarCount').textContent=notes.length;
+      const list=document.getElementById('sidebarList');
+
+      if(!filtered.length){
+        list.innerHTML=`<div class="text-center py-8 px-4"><p class="text-ink/25 text-xs font-body">${q?'Tidak ditemukan':'Belum ada catatan'}</p></div>`;return;
       }
-      showPage('app');
-      await loadNotes();
+
+      const cm={'note-yellow':'#fff9c4','note-pink':'#f8bbd0','note-blue':'#b3e5fc','note-green':'#c8e6c9','note-orange':'#ffe0b2','note-purple':'#e1bee7'};
+
+      list.innerHTML=filtered.map(n=>{
+        const blocks=parseBlocks(n.content);
+        const preview=blocks.map(b=>(b.text||'').replace(/<[^>]*>/g,'')).join(' ').substring(0,50);
+        const isAct=activeNoteId===n.id;
+        return`<div class="sidebar-item ${isAct?'active':''} px-3 py-2.5 mx-1 rounded-lg my-0.5 flex gap-2.5 items-start slide-in" onclick="openNote('${n.id}')">
+          <div class="sidebar-color-dot mt-1.5" style="background:${cm[n.color]||'#fff9c4'};box-shadow:0 0 0 1px rgba(0,0,0,.08)"></div>
+          <div class="flex-1 min-w-0">
+            <div class="font-body text-sm font-medium text-ink/80 truncate">${esc(n.title||'Tanpa Judul')}</div>
+            <div class="font-body text-[11px] text-ink/35 truncate mt-0.5">${esc(preview)||'Catatan kosong...'}</div>
+            <div class="font-body text-[10px] text-ink/25 mt-1">${relDate(n.updated_at||n.created_at)}</div>
+          </div></div>`;
+      }).join('');
     }
 
     // ===== NOTES CRUD =====
-    async function loadNotes() {
-      const { data, error } = await sb.from('notes').select('*')
-        .eq('user_id', currentUser.id).order('z_index', { ascending: true });
-      if (error) { console.error('Load:', error); return; }
-      notes = data || [];
-      maxZ = notes.reduce((m, n) => Math.max(m, n.z_index || 0), 0) + 1;
-      renderAll();
-      renderSidebar();
+    function parseBlocks(content){
+      if(!content)return[];
+      try{const p=JSON.parse(content);return Array.isArray(p)?p:[]}catch{return[]}
     }
 
-    async function addNote() {
-      const w = document.getElementById('canvasWrapper');
-      const x = w.scrollLeft + w.clientWidth / 2 - 120 + (Math.random() * 80 - 40);
-      const y = w.scrollTop + w.clientHeight / 2 - 90 + (Math.random() * 80 - 40);
-      const now = new Date().toISOString();
-      const n = {
-        user_id: currentUser.id, title: 'Catatan Baru', content: '',
-        color: selectedColor, pos_x: Math.max(20, x), pos_y: Math.max(20, y),
-        width: 240, height: 200, z_index: maxZ++,
-        created_at: now, updated_at: now
-      };
-      const { data, error } = await sb.from('notes').insert(n).select().single();
-      if (error) { console.error('Add:', error); return; }
-      notes.push(data);
-      renderNote(data, true);
-      updateCount();
-      renderSidebar();
-      activeNoteId = data.id;
-      renderSidebar();
+    async function loadNotes(){
+      const{data,error}=await sb.from('notes').select('*').eq('user_id',currentUser.id).order('updated_at',{ascending:false});
+      if(error){console.error(error);return}
+      notes=data||[];renderSidebar();
+      if(activeNoteId&&notes.find(n=>n.id===activeNoteId))openNote(activeNoteId);
+      else{activeNoteId=null;showWelcome()}
     }
 
-    async function deleteNote(id) {
-      if (!confirm('Hapus catatan ini?')) return;
-      const { error } = await sb.from('notes').delete().eq('id', id);
-      if (error) { console.error('Del:', error); return; }
-      notes = notes.filter(n => n.id !== id);
-      const el = document.getElementById('note-' + id);
-      if (el) { el.style.cssText += 'transform:scale(0.5) rotate(10deg);opacity:0;transition:all .3s'; setTimeout(() => el.remove(), 300); }
-      if (activeNoteId === id) activeNoteId = null;
-      updateCount();
-      renderSidebar();
+    async function addNote(){
+      const now=new Date().toISOString();
+      const firstBlock={id:uid(),html:'',x:80,y:80,w:400};
+      const n={user_id:currentUser.id,title:'Catatan Baru',content:JSON.stringify([firstBlock]),color:'note-yellow',pos_x:0,pos_y:0,width:240,height:180,z_index:1,created_at:now,updated_at:now};
+      const{data,error}=await sb.from('notes').insert(n).select().single();
+      if(error){console.error(error);return}
+      notes.unshift(data);renderSidebar();openNote(data.id);
+      if(innerWidth<=640&&sidebarOpen)toggleSidebar();
     }
 
-    function scheduleSave(note) {
+    async function deleteCurrentNote(){
+      if(!activeNoteId||!confirm('Hapus catatan ini?'))return;
+      await sb.from('notes').delete().eq('id',activeNoteId);
+      notes=notes.filter(n=>n.id!==activeNoteId);
+      activeNoteId=null;showWelcome();renderSidebar();
+    }
+
+    function scheduleNoteSave(){
+      const note=notes.find(n=>n.id===activeNoteId);if(!note)return;
       clearTimeout(note._t);
-      note._t = setTimeout(async () => {
-        note.updated_at = new Date().toISOString();
-        await sb.from('notes').update({
-          title: note.title, content: note.content, color: note.color,
-          pos_x: note.pos_x, pos_y: note.pos_y, width: note.width,
-          height: note.height, z_index: note.z_index, updated_at: note.updated_at
-        }).eq('id', note.id);
-        // Update date display on note
-        const dateEl = document.querySelector(`#note-${note.id} .note-date`);
-        if (dateEl) dateEl.textContent = formatDate(note.updated_at);
+      note._t=setTimeout(async()=>{
+        note.updated_at=new Date().toISOString();
+        await sb.from('notes').update({title:note.title,content:note.content,color:note.color,updated_at:note.updated_at}).eq('id',note.id);
+        document.getElementById('noteDate').textContent=formatDate(note.updated_at);
         renderSidebar();
-      }, 600);
+      },600);
     }
 
-    // ===== RENDER =====
-    function renderAll() {
-      document.getElementById('canvas').innerHTML = '';
-      notes.forEach(n => renderNote(n, false));
-      updateCount();
-    }
+    // ===== OPEN NOTE =====
+    function openNote(id){
+      const note=notes.find(n=>n.id===id);if(!note)return;
+      activeNoteId=id;selectedBlockId=null;
+      document.getElementById('welcomeState').classList.add('hidden');
+      document.getElementById('noteToolbar').classList.remove('hidden');
+      document.getElementById('fabAdd').classList.remove('hidden');
+      document.getElementById('fabAdd').classList.add('flex');
 
-    function renderNote(note, animate) {
-      const d = document.createElement('div');
-      d.id = 'note-' + note.id;
-      d.className = `sticky-note ${note.color}${animate ? ' note-appear' : ''}`;
-      d.style.cssText = `left:${note.pos_x}px;top:${note.pos_y}px;width:${note.width||240}px;min-height:${note.height||200}px;z-index:${note.z_index||1}`;
+      // Title
+      const titleInput=document.getElementById('noteTitleInput');
+      titleInput.value=note.title||'';
+      titleInput.oninput=()=>{note.title=titleInput.value;scheduleNoteSave()};
 
-      d.innerHTML = `
-        <button class="delete-btn" onclick="deleteNote('${note.id}')" title="Hapus">&#10005;</button>
-        <div class="note-date">${formatDate(note.updated_at || note.created_at)}</div>
-        <input class="note-title" value="${esc(note.title)}" placeholder="Judul..." onfocus="onNoteFocus('${note.id}')">
-        <textarea class="note-content" placeholder="Tulis catatan di sini..." onfocus="onNoteFocus('${note.id}')">${esc(note.content)}</textarea>
-        <svg class="resize-handle" viewBox="0 0 16 16"><path d="M14 14L8 14M14 14L14 8M14 14L6 6" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/></svg>`;
+      // Date
+      document.getElementById('noteDate').textContent=formatDate(note.updated_at||note.created_at);
 
-      d.querySelector('.note-title').addEventListener('input', e => { note.title = e.target.value; scheduleSave(note); });
-      d.querySelector('.note-content').addEventListener('input', e => { note.content = e.target.value; scheduleSave(note); });
-      d.addEventListener('mousedown', e => startDrag(e, note, d));
-      d.addEventListener('touchstart', e => startDrag(e, note, d), { passive: false });
-      const h = d.querySelector('.resize-handle');
-      h.addEventListener('mousedown', e => startResize(e, note, d));
-      h.addEventListener('touchstart', e => startResize(e, note, d), { passive: false });
-      document.getElementById('canvas').appendChild(d);
-    }
+      // Color dots
+      document.querySelectorAll('.note-color-dot').forEach(d=>{
+        d.classList.toggle('active',d.dataset.color===note.color);
+      });
 
-    function onNoteFocus(id) {
-      activeNoteId = id;
-      bringFront(id);
-      renderSidebar();
-    }
-
-    function updateCount() {
-      const c = notes.length;
-      document.getElementById('noteCount').textContent = c > 0 ? `${c} catatan` : '';
-      document.getElementById('emptyState').classList.toggle('hidden', c > 0);
-    }
-
-    function bringFront(id) {
-      const n = notes.find(x => x.id === id); if (!n) return;
-      n.z_index = maxZ++;
-      const el = document.getElementById('note-' + id);
-      if (el) el.style.zIndex = n.z_index;
-      scheduleSave(n);
-    }
-
-    // ===== DRAG =====
-    function gp(e) { return e.touches?.[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY }; }
-
-    function startDrag(e, note, el) {
-      const t = e.target.tagName.toLowerCase();
-      if (t === 'input' || t === 'textarea' || t === 'button' || e.target.closest('.resize-handle') || e.target.classList.contains('delete-btn')) return;
-      e.preventDefault();
-      const p = gp(e);
-      dragState = { note, el, sx: p.x, sy: p.y, ox: note.pos_x, oy: note.pos_y };
-      el.classList.add('dragging'); bringFront(note.id);
-      activeNoteId = note.id;
-      document.addEventListener('mousemove', onDrag); document.addEventListener('mouseup', endDrag);
-      document.addEventListener('touchmove', onDrag, { passive: false }); document.addEventListener('touchend', endDrag);
-    }
-
-    function onDrag(e) {
-      if (!dragState) return; e.preventDefault();
-      const p = gp(e);
-      dragState.note.pos_x = Math.max(0, dragState.ox + p.x - dragState.sx);
-      dragState.note.pos_y = Math.max(0, dragState.oy + p.y - dragState.sy);
-      dragState.el.style.left = dragState.note.pos_x + 'px';
-      dragState.el.style.top = dragState.note.pos_y + 'px';
-    }
-
-    function endDrag() {
-      if (!dragState) return;
-      dragState.el.classList.remove('dragging'); scheduleSave(dragState.note); dragState = null;
-      document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', endDrag);
-      document.removeEventListener('touchmove', onDrag); document.removeEventListener('touchend', endDrag);
-      renderSidebar();
-    }
-
-    // ===== RESIZE =====
-    function startResize(e, note, el) {
-      e.preventDefault(); e.stopPropagation();
-      const p = gp(e);
-      resizeState = { note, el, sx: p.x, sy: p.y, ow: el.offsetWidth, oh: el.offsetHeight };
-      bringFront(note.id);
-      document.addEventListener('mousemove', onResize); document.addEventListener('mouseup', endResize);
-      document.addEventListener('touchmove', onResize, { passive: false }); document.addEventListener('touchend', endResize);
-    }
-
-    function onResize(e) {
-      if (!resizeState) return; e.preventDefault();
-      const p = gp(e);
-      const nw = Math.max(180, resizeState.ow + p.x - resizeState.sx);
-      const nh = Math.max(120, resizeState.oh + p.y - resizeState.sy);
-      resizeState.el.style.width = nw + 'px'; resizeState.el.style.minHeight = nh + 'px';
-      resizeState.note.width = nw; resizeState.note.height = nh;
-    }
-
-    function endResize() {
-      if (!resizeState) return; scheduleSave(resizeState.note); resizeState = null;
-      document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', endResize);
-      document.removeEventListener('touchmove', onResize); document.removeEventListener('touchend', endResize);
-    }
-
-    // ===== HELPERS =====
-    function selectColor(el) {
-      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
-      el.classList.add('active'); selectedColor = el.dataset.color;
-    }
-
-    function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-    document.addEventListener('keydown', e => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); if (currentUser) addNote(); }
-    });
-
-    // Handle window resize for sidebar
-    window.addEventListener('resize', () => {
-      const overlay = document.getElementById('sidebarOverlay');
-      if (window.innerWidth > 640) {
-        overlay.classList.remove('show');
-      } else if (sidebarOpen) {
-        overlay.classList.add('show');
+      // Canvas bg tint
+      const wrapper=document.getElementById('canvasWrapper');
+      wrapper.style.background='';// reset
+      if(canvasBg[note.color]){
+        wrapper.style.backgroundImage=`linear-gradient(${canvasBg[note.color]},${canvasBg[note.color]})`;
+        wrapper.style.backgroundBlendMode='overlay';
       }
-    });
 
-    // ===== INIT =====
-    async function init() {
-      showPage('loading');
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) await onAuth(session); else showPage('login');
-      sb.auth.onAuthStateChange(async (ev, session) => {
-        if (ev === 'SIGNED_IN' && session && !currentUser) await onAuth(session);
+      renderBlocks();
+      renderSidebar();
+      if(innerWidth<=640&&sidebarOpen)toggleSidebar();
+    }
+
+    function showWelcome(){
+      document.getElementById('welcomeState').classList.remove('hidden');
+      document.getElementById('noteToolbar').classList.add('hidden');
+      document.getElementById('noteCanvas').innerHTML='';
+      document.getElementById('fabAdd').classList.add('hidden');
+      const wrapper=document.getElementById('canvasWrapper');
+      wrapper.style.backgroundImage='';wrapper.style.backgroundBlendMode='';
+    }
+
+    // ===== BLOCKS =====
+    function getBlocks(){
+      const note=notes.find(n=>n.id===activeNoteId);
+      return note?parseBlocks(note.content):[];
+    }
+    function saveBlocks(blocks){
+      const note=notes.find(n=>n.id===activeNoteId);if(!note)return;
+      note.content=JSON.stringify(blocks);scheduleNoteSave();
+    }
+
+    function addTextBlock(){
+      if(!activeNoteId)return;
+      const blocks=getBlocks();
+      const wrapper=document.getElementById('canvasWrapper');
+      const x=wrapper.scrollLeft+wrapper.clientWidth/2-150+(Math.random()*60-30);
+      const y=wrapper.scrollTop+wrapper.clientHeight/2-30+(Math.random()*60-30);
+      const b={id:uid(),html:'',x:Math.max(20,x),y:Math.max(20,y),w:320};
+      blocks.push(b);saveBlocks(blocks);renderBlocks();
+      // Focus new block
+      setTimeout(()=>{
+        const el=document.getElementById('block-'+b.id);
+        if(el){selectBlock(b.id);el.querySelector('.text-block-content')?.focus()}
+      },50);
+    }
+
+    function deleteBlock(bid){
+      let blocks=getBlocks();blocks=blocks.filter(b=>b.id!==bid);
+      if(selectedBlockId===bid)selectedBlockId=null;
+      saveBlocks(blocks);renderBlocks();
+    }
+
+    function renderBlocks(){
+      const canvas=document.getElementById('noteCanvas');
+      canvas.innerHTML='';canvas.style.width='3000px';canvas.style.height='3000px';
+      const blocks=getBlocks();
+      blocks.forEach(b=>{
+        const div=document.createElement('div');
+        div.id='block-'+b.id;
+        div.className=`text-block ${selectedBlockId===b.id?'selected':''} block-appear`;
+        div.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w||320}px`;
+
+        div.innerHTML=`
+          <div class="block-drag" title="Seret">⠿</div>
+          <button class="block-delete" onclick="deleteBlock('${b.id}')" title="Hapus blok">✕</button>
+          <div class="text-block-content" contenteditable="true">${b.html||''}</div>`;
+
+        // Click to select
+        div.addEventListener('mousedown',e=>{
+          if(!e.target.closest('.block-delete'))selectBlock(b.id);
+        });
+        div.addEventListener('touchstart',e=>{
+          if(!e.target.closest('.block-delete'))selectBlock(b.id);
+        },{passive:true});
+
+        // Drag via handle
+        const handle=div.querySelector('.block-drag');
+        handle.addEventListener('mousedown',e=>startBlockDrag(e,b,div));
+        handle.addEventListener('touchstart',e=>startBlockDrag(e,b,div),{passive:false});
+
+        // Content editing
+        const content=div.querySelector('.text-block-content');
+        content.addEventListener('input',()=>{
+          b.html=content.innerHTML;saveBlocks(getBlocks().map(bl=>bl.id===b.id?{...bl,html:b.html}:bl));
+        });
+        content.addEventListener('focus',()=>selectBlock(b.id));
+
+        canvas.appendChild(div);
       });
     }
 
+    function selectBlock(bid){
+      selectedBlockId=bid;
+      document.querySelectorAll('.text-block').forEach(el=>{
+        el.classList.toggle('selected',el.id==='block-'+bid);
+      });
+    }
+
+    // Click canvas to deselect
+    document.addEventListener('mousedown',e=>{
+      if(!e.target.closest('.text-block')&&!e.target.closest('.fmt-btn')&&!e.target.closest('.fmt-bar')&&!e.target.closest('.color-picker-dropdown')){
+        if(selectedBlockId){selectedBlockId=null;document.querySelectorAll('.text-block.selected').forEach(el=>el.classList.remove('selected'))}
+        closeAllColorPickers();
+      }
+    });
+
+    // ===== BLOCK DRAG =====
+    function gp(e){return e.touches?.[0]?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY}}
+
+    function startBlockDrag(e,block,el){
+      e.preventDefault();e.stopPropagation();
+      const p=gp(e);
+      dragState={block,el,sx:p.x,sy:p.y,ox:block.x,oy:block.y};
+      el.classList.add('dragging');
+      document.addEventListener('mousemove',onBlockDrag);document.addEventListener('mouseup',endBlockDrag);
+      document.addEventListener('touchmove',onBlockDrag,{passive:false});document.addEventListener('touchend',endBlockDrag);
+    }
+    function onBlockDrag(e){
+      if(!dragState)return;e.preventDefault();
+      const p=gp(e);
+      dragState.block.x=Math.max(0,dragState.ox+p.x-dragState.sx);
+      dragState.block.y=Math.max(0,dragState.oy+p.y-dragState.sy);
+      dragState.el.style.left=dragState.block.x+'px';
+      dragState.el.style.top=dragState.block.y+'px';
+    }
+    function endBlockDrag(){
+      if(!dragState)return;
+      dragState.el.classList.remove('dragging');
+      const blocks=getBlocks().map(b=>b.id===dragState.block.id?{...b,x:dragState.block.x,y:dragState.block.y}:b);
+      saveBlocks(blocks);dragState=null;
+      document.removeEventListener('mousemove',onBlockDrag);document.removeEventListener('mouseup',endBlockDrag);
+      document.removeEventListener('touchmove',onBlockDrag);document.removeEventListener('touchend',endBlockDrag);
+    }
+
+    // ===== FORMATTING =====
+    function execFmt(cmd,val){document.execCommand(cmd,false,val||null);updateFmtButtons()}
+    function changeFontSize(val){document.execCommand('fontSize',false,val)}
+
+    function applyTextColor(color){
+      document.execCommand('foreColor',false,color);
+      document.getElementById('textColorIndicator').style.background=color;
+      closeAllColorPickers();
+    }
+    function applyHighlight(color){
+      if(color==='transparent')document.execCommand('removeFormat',false,null);
+      else document.execCommand('hiliteColor',false,color);
+      closeAllColorPickers();
+    }
+
+    function toggleColorPicker(id){
+      const el=document.getElementById(id);
+      const wasOpen=el.classList.contains('show');
+      closeAllColorPickers();
+      if(!wasOpen)el.classList.add('show');
+    }
+    function closeAllColorPickers(){
+      document.querySelectorAll('.color-picker-dropdown').forEach(el=>el.classList.remove('show'));
+    }
+
+    function updateFmtButtons(){
+      document.getElementById('btnBold')?.classList.toggle('active',document.queryCommandState('bold'));
+      document.getElementById('btnItalic')?.classList.toggle('active',document.queryCommandState('italic'));
+      document.getElementById('btnUnderline')?.classList.toggle('active',document.queryCommandState('underline'));
+      document.getElementById('btnStrike')?.classList.toggle('active',document.queryCommandState('strikeThrough'));
+    }
+    document.addEventListener('selectionchange',updateFmtButtons);
+
+    // ===== NOTE COLOR =====
+    function changeNoteColor(el){
+      const note=notes.find(n=>n.id===activeNoteId);if(!note)return;
+      note.color=el.dataset.color;
+      document.querySelectorAll('.note-color-dot').forEach(d=>d.classList.toggle('active',d.dataset.color===note.color));
+      const wrapper=document.getElementById('canvasWrapper');
+      if(canvasBg[note.color]){
+        wrapper.style.backgroundImage=`linear-gradient(${canvasBg[note.color]},${canvasBg[note.color]})`;
+      }
+      scheduleNoteSave();renderSidebar();
+    }
+
+    // ===== KEYBOARD =====
+    document.addEventListener('keydown',e=>{
+      if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();if(currentUser)addNote()}
+    });
+
+    // ===== SIDEBAR RESPONSIVE =====
+    window.addEventListener('resize',()=>{
+      const ov=document.getElementById('sidebarOverlay');
+      innerWidth>640?ov.classList.remove('show'):sidebarOpen&&ov.classList.add('show');
+    });
+
+    // ===== INIT =====
+    async function init(){
+      showPage('loading');
+      const{data:{session}}=await sb.auth.getSession();
+      if(session)await onAuth(session);else showPage('login');
+      sb.auth.onAuthStateChange(async(ev,session)=>{
+        if(ev==='SIGNED_IN'&&session&&!currentUser)await onAuth(session);
+      });
+    }
     init();
   </script>
 </body>
