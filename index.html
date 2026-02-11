@@ -357,7 +357,9 @@ CREATE POLICY "Users can delete own notes"
 
   <script>
     // ===== STATE =====
-    let supabase = null;
+    // PENTING: variable dinamai 'sb' bukan 'supabase' karena library CDN
+    // sudah mendaftarkan global 'supabase' — kalau pakai nama sama akan error
+    let sb = null;
     let currentUser = null;
     let notes = [];
     let selectedColor = 'note-yellow';
@@ -389,7 +391,7 @@ CREATE POLICY "Users can delete own notes"
 
     // ===== AUTH =====
     async function loginWithGoogle() {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error } = await sb.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: window.location.origin + window.location.pathname }
       });
@@ -403,7 +405,7 @@ CREATE POLICY "Users can delete own notes"
       const pw = document.getElementById('passwordInput').value;
       if (!email || !pw) return showAuthError('Isi email dan password!');
       if (pw.length < 6) return showAuthError('Password minimal 6 karakter!');
-      const { error } = await supabase.auth.signUp({ email, password: pw });
+      const { error } = await sb.auth.signUp({ email, password: pw });
       if (error) return showAuthError(error.message);
       showAuthError('Cek email untuk konfirmasi! 📬', false);
     }
@@ -412,13 +414,13 @@ CREATE POLICY "Users can delete own notes"
       const email = document.getElementById('emailInput').value.trim();
       const pw = document.getElementById('passwordInput').value;
       if (!email || !pw) return showAuthError('Isi email dan password!');
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
       if (error) return showAuthError(error.message);
       onAuth(data.session);
     }
 
     async function logout() {
-      await supabase.auth.signOut();
+      await sb.auth.signOut();
       currentUser = null; notes = [];
       document.getElementById('canvas').innerHTML = '';
       showPage('login');
@@ -456,7 +458,7 @@ CREATE POLICY "Users can delete own notes"
 
     // ===== NOTES CRUD =====
     async function loadNotes() {
-      const { data, error } = await supabase.from('notes').select('*')
+      const { data, error } = await sb.from('notes').select('*')
         .eq('user_id', currentUser.id).order('z_index', { ascending: true });
       if (error) { console.error('Load:', error); return; }
       notes = data || [];
@@ -473,7 +475,7 @@ CREATE POLICY "Users can delete own notes"
         color: selectedColor, pos_x: Math.max(20, x), pos_y: Math.max(20, y),
         width: 240, height: 180, z_index: maxZ++
       };
-      const { data, error } = await supabase.from('notes').insert(n).select().single();
+      const { data, error } = await sb.from('notes').insert(n).select().single();
       if (error) { console.error('Add:', error); return; }
       notes.push(data);
       renderNote(data, true);
@@ -482,7 +484,7 @@ CREATE POLICY "Users can delete own notes"
 
     async function deleteNote(id) {
       if (!confirm('Hapus catatan ini?')) return;
-      const { error } = await supabase.from('notes').delete().eq('id', id);
+      const { error } = await sb.from('notes').delete().eq('id', id);
       if (error) { console.error('Del:', error); return; }
       notes = notes.filter(n => n.id !== id);
       const el = document.getElementById('note-' + id);
@@ -493,7 +495,7 @@ CREATE POLICY "Users can delete own notes"
     function scheduleSave(note) {
       clearTimeout(note._t);
       note._t = setTimeout(async () => {
-        await supabase.from('notes').update({
+        await sb.from('notes').update({
           title: note.title, content: note.content, color: note.color,
           pos_x: note.pos_x, pos_y: note.pos_y, width: note.width,
           height: note.height, z_index: note.z_index, updated_at: new Date().toISOString()
@@ -616,13 +618,18 @@ CREATE POLICY "Users can delete own notes"
       showPage('loading');
       const cfg = getConfig();
       if (!cfg) { showPage('login'); document.getElementById('loadingPage').classList.add('hidden'); showSetup(); return; }
-      try { supabase = window.supabase.createClient(cfg.url, cfg.key); }
-      catch { showPage('login'); document.getElementById('loadingPage').classList.add('hidden'); showSetup(); return; }
+      try {
+        // Gunakan window.supabase.createClient dari CDN library
+        sb = window.supabase.createClient(cfg.url, cfg.key);
+      } catch(err) {
+        console.error('Supabase init error:', err);
+        showPage('login'); document.getElementById('loadingPage').classList.add('hidden'); showSetup(); return;
+      }
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await sb.auth.getSession();
       if (session) await onAuth(session); else showPage('login');
 
-      supabase.auth.onAuthStateChange(async (ev, session) => {
+      sb.auth.onAuthStateChange(async (ev, session) => {
         if (ev === 'SIGNED_IN' && session && !currentUser) await onAuth(session);
       });
     }
